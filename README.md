@@ -1,0 +1,2 @@
+# coredns-netbox-plugin
+
