@@ -6,7 +6,6 @@ import (
 	"github.com/coredns/coredns/plugin/test"
 	"github.com/miekg/dns"
 	"gopkg.in/h2non/gock.v1"
-	"strings"
 	"testing"
 )
 
@@ -32,10 +31,7 @@ func TestNetbox(t *testing.T) {
 	if rcode != 0 {
 		t.Errorf("Expected rcode %v, got %v", 0, rcode)
 	}
-
-	A := strings.Split(rec.Msg.Answer[0].String(), "A")
-
-	IP := strings.Trim(A[len(A)-1], "\t ")
+	IP := rec.Msg.Answer[0].(*dns.A).A.String()
 
 	if IP != "10.0.0.2" {
 		t.Errorf("Expected %v, got %v", "10.0.0.2", IP)
