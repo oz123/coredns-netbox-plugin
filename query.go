@@ -23,7 +23,6 @@ type RecordsList struct {
 func query(url, token, dns_name string) string {
 
 	records := RecordsList{}
-	fmt.Printf("%+v\n", records)
 	client := &http.Client{}
 	var resp *http.Response
 
@@ -38,12 +37,12 @@ func query(url, token, dns_name string) string {
 		}
 
 		if resp.StatusCode == http.StatusOK {
-			fmt.Println("Response OK")
 			break
 		}
 
 		time.Sleep(1 * time.Second)
 	}
+	// TODO: check that we got status code 200
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		clog.Fatalf("Error reading body %v", err)

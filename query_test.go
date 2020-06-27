@@ -12,7 +12,7 @@ func TestQuery(t *testing.T) {
 		`{"count":1, "results":[{"address": "10.0.0.2/25", "dns_name": "my_host"}]}`)
 
 	want := "10.0.0.2"
-	got := query("https://example.org", "mytoken", "myhost")
+	got := query("https://example.org", "mytoken", "my_host")
 	if got != want {
 		t.Fatalf("Expected true")
 	}
