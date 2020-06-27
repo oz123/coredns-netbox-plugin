@@ -66,9 +66,9 @@ Then add it to Corefile:
 ```
 . {
    netbox {
-	    token <YOU-NETBOX-API-TOKEN>
-			url <https://netbox.example.org>
-	 }
+      token <YOU-NETBOX-API-TOKEN>
+      url <https://netbox.example.org>
+   }
 }
 ```
 
