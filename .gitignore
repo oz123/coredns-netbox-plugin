@@ -24,3 +24,5 @@ _testmain.go
 *.test
 *.prof
 
+
+*.sw[p,o]
