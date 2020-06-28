@@ -38,7 +38,7 @@ func query(url, token, dns_name string) string {
 	records := RecordsList{}
 	client := &http.Client{}
 	var resp *http.Response
-
+	clog.Debug("Querying ", fmt.Sprintf("%s/?dns_name=%s", url, dns_name))
 	req, err := http.NewRequest("GET", fmt.Sprintf("%s/?dns_name=%s", url, dns_name), nil)
 	req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
 
@@ -67,5 +67,9 @@ func query(url, token, dns_name string) string {
 		clog.Fatalf("could not unmarshal response %v", err)
 	}
 
+	if len(records.Records) == 0 {
+		clog.Info("Recored not found in", jsonAns)
+		return ""
+	}
 	return strings.Split(records.Records[0].Address, "/")[0]
 }
