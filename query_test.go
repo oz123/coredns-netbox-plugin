@@ -21,12 +21,13 @@ import (
 
 func TestQuery(t *testing.T) {
 	defer gock.Off() // Flush pending mocks after test execution
-	gock.New("https://example.org").Get("/").Reply(
+	gock.New("https://example.org/api/ipam/ip-addresses/").MatchParams(
+		map[string]string{"dns_name": "my_host"}).Reply(
 		200).BodyString(
 		`{"count":1, "results":[{"address": "10.0.0.2/25", "dns_name": "my_host"}]}`)
 
 	want := "10.0.0.2"
-	got := query("https://example.org", "mytoken", "my_host")
+	got := query("https://example.org/api/ipam/ip-addresses", "mytoken", "my_host")
 	if got != want {
 		t.Fatalf("Expected true")
 	}

@@ -39,7 +39,7 @@ func query(url, token, dns_name string) string {
 	client := &http.Client{}
 	var resp *http.Response
 
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/?dns_name=%s", url, dns_name), nil)
 	req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
 
 	for i := 1; i <= 10; i++ {
