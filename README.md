@@ -72,6 +72,12 @@ Then add it to Corefile:
 }
 ```
 
+## Developing locally
+
+You can test the plugin functionallity with CoreDNS by adding the following to
+`go.mod` in the source code directory of coredns.
+
+replace github.com/oz123/coredns-netbox-plugin => <path-to-you-local-copy>/coredns-netbox-plugin
 
 ## Credits
 
