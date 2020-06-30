@@ -33,7 +33,11 @@ type RecordsList struct {
 	Records []Record `json:"results"`
 }
 
+var stupidCache = make(map[string]string)
+
 func query(url, token, dns_name string) string {
+
+	clog.Debug(stupidCache)
 
 	records := RecordsList{}
 	client := &http.Client{}
@@ -71,5 +75,10 @@ func query(url, token, dns_name string) string {
 		clog.Info("Recored not found in", jsonAns)
 		return ""
 	}
-	return strings.Split(records.Records[0].Address, "/")[0]
+
+	ip_address := strings.Split(records.Records[0].Address, "/")[0]
+
+	stupidCache[dns_name] = ip_address
+
+	return ip_address
 }
