@@ -77,7 +77,18 @@ Then add it to Corefile:
 You can test the plugin functionallity with CoreDNS by adding the following to
 `go.mod` in the source code directory of coredns.
 
+```
 replace github.com/oz123/coredns-netbox-plugin => <path-to-you-local-copy>/coredns-netbox-plugin
+```
+
+Testing against a remote instance of netbox is possible with SSH port forwarding:
+
+```
+Host YourHost
+   Hostname 10.0.0.91
+   ProxyJump YourJumpHost
+   LocalForward 18443 192.168.1.128:8443
+```
 
 ## Credits
 
