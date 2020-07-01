@@ -20,6 +20,7 @@ import (
 	"net"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/coredns/coredns/plugin"
 	"github.com/coredns/coredns/plugin/metrics"
@@ -33,9 +34,10 @@ import (
 var log = clog.NewWithPlugin("netbox")
 
 type Netbox struct {
-	Url   string
-	Token string
-	Next  plugin.Handler
+	Url           string
+	Token         string
+	CacheDuration time.Duration
+	Next          plugin.Handler
 }
 
 func (n Netbox) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) (int, error) {

@@ -21,6 +21,7 @@ import (
 	"github.com/miekg/dns"
 	"gopkg.in/h2non/gock.v1"
 	"testing"
+	"time"
 )
 
 func TestNetbox(t *testing.T) {
@@ -29,7 +30,7 @@ func TestNetbox(t *testing.T) {
 		map[string]string{"dns_name": "my_host"}).Reply(
 		200).BodyString(
 		`{"count":1, "results":[{"address": "10.0.0.2/25", "dns_name": "my_host"}]}`)
-	nb := Netbox{Url: "https://example.org/api/ipam/ip-addresses", Token: "s3kr3tt0ken"}
+	nb := Netbox{Url: "https://example.org/api/ipam/ip-addresses", Token: "s3kr3tt0ken", CacheDuration: time.Second * 10}
 
 	if nb.Name() != "netbox" {
 		t.Errorf("expected plugin name: %s, got %s", "netbox", nb.Name())
