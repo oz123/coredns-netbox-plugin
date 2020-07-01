@@ -22,6 +22,7 @@ import (
 	"time"
 
 	clog "github.com/coredns/coredns/plugin/pkg/log"
+	"github.com/imkira/go-ttlmap"
 )
 
 type Record struct {
@@ -33,52 +34,53 @@ type RecordsList struct {
 	Records []Record `json:"results"`
 }
 
-var stupidCache = make(map[string]string)
+var localCache = ttlmap.New(nil)
 
-func query(url, token, dns_name string) string {
+func query(url, token, dns_name string, duration time.Duration) string {
+	item, err := localCache.Get(dns_name)
+	if err == nil {
+		clog.Debug(fmt.Sprintf("Found in local cache %s", dns_name))
+		return item.Value().(string)
+	} else {
+		records := RecordsList{}
+		client := &http.Client{}
+		var resp *http.Response
+		clog.Debug("Querying ", fmt.Sprintf("%s/?dns_name=%s", url, dns_name))
+		req, err := http.NewRequest("GET", fmt.Sprintf("%s/?dns_name=%s", url, dns_name), nil)
+		req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
 
-	clog.Debug(stupidCache)
+		for i := 1; i <= 10; i++ {
+			resp, err = client.Do(req)
 
-	records := RecordsList{}
-	client := &http.Client{}
-	var resp *http.Response
-	clog.Debug("Querying ", fmt.Sprintf("%s/?dns_name=%s", url, dns_name))
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s/?dns_name=%s", url, dns_name), nil)
-	req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
+			if err != nil {
+				clog.Fatalf("HTTP Error %v", err)
+			}
 
-	for i := 1; i <= 10; i++ {
-		resp, err = client.Do(req)
+			if resp.StatusCode == http.StatusOK {
+				break
+			}
 
+			time.Sleep(1 * time.Second)
+		}
+		// TODO: check that we got status code 200
+		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			clog.Fatalf("HTTP Error %v", err)
+			clog.Fatalf("Error reading body %v", err)
 		}
 
-		if resp.StatusCode == http.StatusOK {
-			break
+		jsonAns := string(body)
+		err = json.Unmarshal([]byte(jsonAns), &records)
+		if err != nil {
+			clog.Fatalf("could not unmarshal response %v", err)
 		}
 
-		time.Sleep(1 * time.Second)
+		if len(records.Records) == 0 {
+			clog.Info("Recored not found in", jsonAns)
+			return ""
+		}
+
+		ip_address := strings.Split(records.Records[0].Address, "/")[0]
+		localCache.Set(dns_name, ttlmap.NewItem(ip_address, ttlmap.WithTTL(duration)), nil)
+		return ip_address
 	}
-	// TODO: check that we got status code 200
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		clog.Fatalf("Error reading body %v", err)
-	}
-
-	jsonAns := string(body)
-	err = json.Unmarshal([]byte(jsonAns), &records)
-	if err != nil {
-		clog.Fatalf("could not unmarshal response %v", err)
-	}
-
-	if len(records.Records) == 0 {
-		clog.Info("Recored not found in", jsonAns)
-		return ""
-	}
-
-	ip_address := strings.Split(records.Records[0].Address, "/")[0]
-
-	stupidCache[dns_name] = ip_address
-
-	return ip_address
 }

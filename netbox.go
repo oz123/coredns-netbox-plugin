@@ -45,7 +45,7 @@ func (n Netbox) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) 
 	answers := []dns.RR{}
 	state := request.Request{W: w, Req: r}
 
-	ip_address := query(n.Url, n.Token, strings.TrimRight(state.QName(), "."))
+	ip_address := query(n.Url, n.Token, strings.TrimRight(state.QName(), "."), n.CacheDuration)
 	// no IP is found in netbox pass processing to the next plugin
 	if len(ip_address) == 0 {
 		return plugin.NextOrFailure(n.Name(), n.Next, ctx, w, r)
