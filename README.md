@@ -68,10 +68,12 @@ Then add it to Corefile:
    netbox {
       token <YOU-NETBOX-API-TOKEN>
       url <https://netbox.example.org>
+      localCacheDuration <The duration to keep each entry locally before querying netbox again. Use go `time.Duration` notation>
    }
 }
 ```
 
+The config parameters are mandatory.
 ## Developing locally
 
 You can test the plugin functionallity with CoreDNS by adding the following to
