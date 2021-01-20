@@ -53,7 +53,8 @@ func query(url, token, dns_name string, duration time.Duration) string {
 			resp, err = client.Do(req)
 
 			if err != nil {
-				clog.Fatalf("HTTP Error %v", err)
+				clog.Errorf("HTTP Error: %v", err)
+				return ""
 			}
 
 			if resp.StatusCode == http.StatusOK {
@@ -65,17 +66,19 @@ func query(url, token, dns_name string, duration time.Duration) string {
 		// TODO: check that we got status code 200
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			clog.Fatalf("Error reading body %v", err)
+			clog.Errorf("Error reading body: %v", err)
+			return ""
 		}
 
 		jsonAns := string(body)
 		err = json.Unmarshal([]byte(jsonAns), &records)
 		if err != nil {
-			clog.Fatalf("could not unmarshal response %v", err)
+			clog.Errorf("could not unmarshal response: %v", err)
+			return ""
 		}
 
 		if len(records.Records) == 0 {
-			clog.Info("Recored not found in", jsonAns)
+			clog.Info("Recored not found in answer: ", jsonAns)
 			return ""
 		}
 
