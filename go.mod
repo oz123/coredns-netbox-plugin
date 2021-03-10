@@ -1,6 +1,6 @@
-module coredns-netbox-plugin
+module github.com/oz123/coredns-netbox-plugin
 
-go 1.14
+go 1.15
 
 require (
 	github.com/caddyserver/caddy v1.0.5
