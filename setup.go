@@ -21,7 +21,7 @@ import (
 	"github.com/coredns/coredns/plugin/metrics"
 	"time"
 
-	"github.com/caddyserver/caddy"
+	"github.com/coredns/caddy"
 )
 
 // init registers this plugin.
