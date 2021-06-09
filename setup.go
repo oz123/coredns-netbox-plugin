@@ -40,7 +40,15 @@ func setup(c *caddy.Controller) error {
 	// prometheus plugin has been used - if so we will export metrics. We can only register
 	// this metric once, hence the "once.Do".
 	c.OnStartup(func() error {
-		once.Do(func() { metrics.MustRegister(c, requestCount) })
+		once.Do(func() {
+			m := dnsserver.GetConfig(c).Handler("prometheus")
+			if m == nil {
+				return
+			}
+			if x, ok := m.(*metrics.Metrics); ok {
+				x.MustRegister(requestCount)
+			}
+		})
 		return nil
 	})
 
