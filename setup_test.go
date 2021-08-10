@@ -19,7 +19,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/caddyserver/caddy"
+	"github.com/coredns/caddy"
 	"github.com/stretchr/testify/assert"
 )
 
