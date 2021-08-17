@@ -1,12 +1,12 @@
 # coredns-netbox-plugin
 
-This plugin gets an A record from NetBox[1]. It uses the REST API of netxbox
+This plugin gets an A record from NetBox[1]. It uses the REST API of netbox
 to ask for a an IP address of a hostname:
-
-https://netbox.example.org/api/ipam/ip-addresses/?dns_name=example-vm-host
-
-
 ```
+curl https://netbox.example.org/api/ipam/ip-addresses/?dns_name=example-vm-host
+
+
+
 {
     "count": 1,
     "next": null,
