@@ -1,0 +1,61 @@
+version: '3.4'
+services:
+  netbox: &netbox
+    image: netboxcommunity/netbox:v2.11.11
+    depends_on:
+    - postgres
+    - redis
+    - redis-cache
+    - netbox-worker
+    env_file: env/netbox.env
+    user: '101'
+    #volumes:
+    #- ./startup_scripts:/opt/netbox/startup_scripts:z,ro
+    #- ./initializers:/opt/netbox/initializers:z,ro
+    #- ./configuration:/etc/netbox/config:z,ro
+    #- ./reports:/etc/netbox/reports:z,ro
+    #- ./scripts:/etc/netbox/scripts:z,ro
+    #- netbox-media-files:/opt/netbox/netbox/media:z
+  netbox-worker:
+    <<: *netbox
+    depends_on:
+    - redis
+    entrypoint:
+    - /opt/netbox/venv/bin/python
+    - /opt/netbox/netbox/manage.py
+    command:
+    - rqworker
+    ports: []
+
+  # postgres
+  postgres:
+    image: postgres:12-alpine
+    env_file: env/postgres.env
+    volumes:
+    - netbox-postgres-data:/var/lib/postgresql/data
+
+  # redis
+  redis:
+    image: redis:6-alpine
+    command:
+    - sh
+    - -c # this is to evaluate the $REDIS_PASSWORD from the env
+    - redis-server --appendonly yes --requirepass $$REDIS_PASSWORD ## $$ because of docker-compose
+    env_file: env/redis.env
+    volumes:
+    - netbox-redis-data:/data
+  redis-cache:
+    image: redis:6-alpine
+    command:
+    - sh
+    - -c # this is to evaluate the $REDIS_PASSWORD from the env
+    - redis-server --requirepass $$REDIS_PASSWORD ## $$ because of docker-compose
+    env_file: env/redis-cache.env
+
+volumes:
+  netbox-media-files:
+    driver: local
+  netbox-postgres-data:
+    driver: local
+  netbox-redis-data:
+    driver: local
