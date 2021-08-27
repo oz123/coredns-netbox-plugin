@@ -43,32 +43,47 @@ type Netbox struct {
 func (n Netbox) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) (int, error) {
 
 	answers := []dns.RR{}
+	// TODO: check DNS request type here
+	// https://en.wikipedia.org/wiki/List_of_DNS_record_types
+	// if this is not A or AAAA return early
 	state := request.Request{W: w, Req: r}
-
-	ip_address := query(n.Url, n.Token, strings.TrimRight(state.QName(), "."), n.CacheDuration)
-	// no IP is found in netbox pass processing to the next plugin
-	if len(ip_address) == 0 {
-		return plugin.NextOrFailure(n.Name(), n.Next, ctx, w, r)
-	}
 
 	// Export metric with the server label set to the current
 	// server handling the request.
 	requestCount.WithLabelValues(metrics.WithServer(ctx)).Inc()
 
-	rec := new(dns.A)
-	rec.Hdr = dns.RR_Header{Name: state.QName(), Rrtype: dns.TypeA, Class: dns.ClassINET, Ttl: 3600}
-	rec.A = net.ParseIP(ip_address)
-	answers = append(answers, rec)
-	m := new(dns.Msg)
-	m.Answer = answers
-	m.SetReply(r)
-	w.WriteMsg(m)
+	switch state.QType() {
+	case dns.TypeA:
+		ip_address := query(n.Url, n.Token, strings.TrimRight(state.QName(), "."), n.CacheDuration)
+		// no IP is found in netbox pass processing to the next plugin
+		if len(ip_address) == 0 {
+			return plugin.NextOrFailure(n.Name(), n.Next, ctx, w, r)
+		}
+		rec := a(state, ip_address, 3600)
+		answers = append(answers, rec)
+		m := new(dns.Msg)
+		m.Answer = answers
+		m.SetReply(r)
+		w.WriteMsg(m)
+		return dns.RcodeSuccess, nil
+	// TODO: add querying for AAAA records
+	default:
+		// TODO: is dns.RcodeServerFailure the correct answer?
+		// maybe dns.RcodeNotImplemented is more appropriate?
+		return dns.RcodeServerFailure, nil
+	}
 
-	return dns.RcodeSuccess, nil
 }
 
 // Name implements the Handler interface.
 func (n Netbox) Name() string { return "netbox" }
+
+func a(state request.Request, ip_addr string, ttl uint32) *dns.A {
+	rec := new(dns.A)
+	rec.Hdr = dns.RR_Header{Name: state.QName(), Rrtype: dns.TypeA, Class: dns.ClassINET, Ttl: ttl}
+	rec.A = net.ParseIP(ip_addr)
+	return rec
+}
 
 // Make out a reference to os.Stdout so we can easily overwrite it for testing.
 var out io.Writer = os.Stdout
