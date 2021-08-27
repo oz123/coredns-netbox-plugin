@@ -20,11 +20,12 @@ netbox-launch: ## start netbox with docker compose
 					
 
 netbox-data-import: ## import the data into postgresql
-	docker-compose stop postgres
-	docker-compose exec  postgres bash -c 'export PGPASSWORD=${POSTGRES_PASSWORD}; psql -U netbox -h localhost -c "create database netbox"'
-	docker-compose exec  postgres bash -c 'export PGPASSWORD=${POSTGRES_PASSWORD}; psql -U netbox -h localhost drop database netbox'
-	docker-compose exec  postgres bash -c 'export PGPASSWORD=${POSTGRES_PASSWORD}; psql -U netbox -h localhost -c netbox < netbox.sql'
+	docker-compose exec  postgres bash -c "apk add postgresql-client"
+	docker-compose exec  postgres bash -c 'export PGPASSWORD=$(POSTGRES_PASSWORD); dropdb --if-exists -U netbox -h localhost netbox'
+	docker-compose exec  postgres bash -c 'export PGPASSWORD=$(POSTGRES_PASSWORD); createdb -U netbox -h localhost netbox'
+	docker cp netbox.sql testing_postgres_1:/
+	docker-compose exec  postgres bash -c 'export PGPASSWORD=$(POSTGRES_PASSWORD); psql -U netbox -h localhost -d netbox < netbox.sql'
 
 
 netbox-data-dump:  ## dump sql data using sqldump.
-	docker-compose exec postgres bash -c 'export PGPASSWORD=${POSTGRES_PASSWORD}; pg_dump -U netbox -h localhost -d netbox' > netbox.sql
+	docker-compose exec postgres bash -c 'export PGPASSWORD=$(POSTGRES_PASSWORD); pg_dump -U netbox -h localhost -d netbox' > netbox.sql
