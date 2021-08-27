@@ -26,3 +26,5 @@ _testmain.go
 
 
 *.sw[p,o]
+
+coredns-**/
