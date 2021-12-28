@@ -26,8 +26,14 @@ import (
 )
 
 type Record struct {
+	Family   Family `json:"faily"`
 	Address  string `json:"address"`
 	HostName string `json:"dns_name,omitempty"`
+}
+
+type Family struct {
+	Protocol int    `json:"value"`
+	Label    string `json:"label"`
 }
 
 type RecordsList struct {
@@ -36,7 +42,7 @@ type RecordsList struct {
 
 var localCache = ttlmap.New(nil)
 
-func query(url, token, dns_name string, duration time.Duration) string {
+func query(url, token, dns_name string, duration time.Duration, protocol int) string {
 	item, err := localCache.Get(dns_name)
 	if err == nil {
 		clog.Debug(fmt.Sprintf("Found in local cache %s", dns_name))
@@ -62,8 +68,9 @@ func query(url, token, dns_name string, duration time.Duration) string {
 
 			time.Sleep(1 * time.Second)
 		}
-		// TODO: check that we got status code 200
+
 		body, err := ioutil.ReadAll(resp.Body)
+
 		if err != nil {
 			clog.Fatalf("Error reading body %v", err)
 		}

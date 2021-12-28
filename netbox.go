@@ -54,7 +54,7 @@ func (n Netbox) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) 
 
 	switch state.QType() {
 	case dns.TypeA:
-		ip_address := query(n.Url, n.Token, strings.TrimRight(state.QName(), "."), n.CacheDuration)
+		ip_address := query(n.Url, n.Token, strings.TrimRight(state.QName(), "."), n.CacheDuration, 4)
 		// no IP is found in netbox pass processing to the next plugin
 		if len(ip_address) == 0 {
 			return plugin.NextOrFailure(n.Name(), n.Next, ctx, w, r)
@@ -67,6 +67,15 @@ func (n Netbox) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) 
 		w.WriteMsg(m)
 		return dns.RcodeSuccess, nil
 	// TODO: add querying for AAAA records
+	case dns.TypeAAAA:
+		ip_address := query(n.Url, n.Token, strings.TrimRight(state.QName(), "."), n.CacheDuration, 6)
+		rec := a6(state, ip_address, 3600)
+		answers = append(answers, rec)
+		m := new(dns.Msg)
+		m.Answer = answers
+		m.SetReply(r)
+		w.WriteMsg(m)
+		return dns.RcodeSuccess, nil
 	default:
 		// TODO: is dns.RcodeServerFailure the correct answer?
 		// maybe dns.RcodeNotImplemented is more appropriate?
@@ -81,6 +90,13 @@ func (n Netbox) Name() string { return "netbox" }
 func a(state request.Request, ip_addr string, ttl uint32) *dns.A {
 	rec := new(dns.A)
 	rec.Hdr = dns.RR_Header{Name: state.QName(), Rrtype: dns.TypeA, Class: dns.ClassINET, Ttl: ttl}
+	rec.A = net.ParseIP(ip_addr)
+	return rec
+}
+
+func a6(state request.Request, ip_addr string, ttl uint32) *dns.A {
+	rec := new(dns.A)
+	rec.Hdr = dns.RR_Header{Name: state.QName(), Rrtype: dns.TypeAAAA, Class: dns.ClassINET, Ttl: ttl}
 	rec.A = net.ParseIP(ip_addr)
 	return rec
 }
