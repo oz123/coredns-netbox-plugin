@@ -36,3 +36,8 @@ coredns-build:
 .PHONY: coredns-clean
 coredns-clean:
 	make -C coredns-$(VERSION) clean
+
+.PHONY: test
+test:  ## run the unit tests
+	go test -v -failfast
+
