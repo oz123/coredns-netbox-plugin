@@ -37,6 +37,22 @@ func TestQuery(t *testing.T) {
 
 }
 
+// dig google.com AAAA +short
+func TestQueryIPv6(t *testing.T) {
+	defer gock.Off() // Flush pending mocks after test execution
+	gock.New("https://example.org/api/ipam/ip-addresses/").MatchParams(
+		map[string]string{"dns_name": "mail.foo.com"}).Reply(
+		200).BodyString(
+		`{"count":1, "results":[{"address": "fe80::250:56ff:fe3d:83af/64", "dns_name": "mail.foo.com"}]}`)
+
+	want := "fe80::250:56ff:fe3d:83af"
+	got := query("https://example.org/api/ipam/ip-addresses", "mytoken", "mail.foo.com", time.Millisecond*100, 4)
+	if got != want {
+		t.Fatalf("Expected %s but got %s", want, got)
+	}
+
+}
+
 func TestNoSuchHost(t *testing.T) {
 
 	defer gock.Off() // Flush pending mocks after test execution
