@@ -137,6 +137,10 @@ func query(url, token, dns_name string, duration time.Duration, protocol int) st
 			time.Sleep(1 * time.Second)
 		}
 
+		if resp.StatusCode != http.StatusOK {
+			return ""
+		}
+
 		body, err := ioutil.ReadAll(resp.Body)
 		logger.Printf("%s", body)
 		if err != nil {

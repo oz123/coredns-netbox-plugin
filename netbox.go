@@ -33,6 +33,9 @@ import (
 // friends to log.
 var log = clog.NewWithPlugin("netbox")
 
+// Make out a reference to os.Stdout so we can easily overwrite it for testing.
+var out io.Writer = os.Stdout
+
 type Netbox struct {
 	Url           string
 	Token         string
@@ -42,7 +45,6 @@ type Netbox struct {
 
 func (n Netbox) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) (int, error) {
 
-	answers := []dns.RR{}
 	// TODO: check DNS request type here
 	// https://en.wikipedia.org/wiki/List_of_DNS_record_types
 	// if this is not A or AAAA return early
@@ -51,41 +53,57 @@ func (n Netbox) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) 
 	// Export metric with the server label set to the current
 	// server handling the request.
 	requestCount.WithLabelValues(metrics.WithServer(ctx)).Inc()
+	var (
+		ip_address string = ""
+		record4    *dns.A
+		record6    *dns.AAAA
+	)
 
 	switch state.QType() {
+
 	case dns.TypeA:
-		ip_address := query(n.Url, n.Token, strings.TrimRight(state.QName(), "."), n.CacheDuration, 4)
+		ip_address = query(n.Url, n.Token, strings.TrimRight(state.QName(), "."), n.CacheDuration, 4)
 		// no IP is found in netbox pass processing to the next plugin
-		if len(ip_address) == 0 {
-			return plugin.NextOrFailure(n.Name(), n.Next, ctx, w, r)
-		}
-		rec := a(state, ip_address, 3600)
-		answers = append(answers, rec)
-		m := new(dns.Msg)
-		m.Answer = answers
-		m.SetReply(r)
-		w.WriteMsg(m)
-		return dns.RcodeSuccess, nil
-	// TODO: add querying for AAAA records
+		record4 = a(state, ip_address, 3600)
 	case dns.TypeAAAA:
-		ip_address := query(n.Url, n.Token, strings.TrimRight(state.QName(), "."), n.CacheDuration, 6)
-		rec := a6(state, ip_address, 3600)
-		answers = append(answers, rec)
-		m := new(dns.Msg)
-		m.Answer = answers
-		m.SetReply(r)
-		w.WriteMsg(m)
-		return dns.RcodeSuccess, nil
+		ip_address = query(n.Url, n.Token, strings.TrimRight(state.QName(), "."), n.CacheDuration, 6)
+		record6 = a6(state, ip_address, 3600)
 	default:
 		// TODO: is dns.RcodeServerFailure the correct answer?
 		// maybe dns.RcodeNotImplemented is more appropriate?
 		return dns.RcodeServerFailure, nil
 	}
 
+	if len(ip_address) == 0 {
+		return plugin.NextOrFailure(n.Name(), n.Next, ctx, w, r)
+	}
+
+	writeDNSAnswer(record4, record6, w, r)
+	return dns.RcodeSuccess, nil
+
 }
 
 // Name implements the Handler interface.
 func (n Netbox) Name() string { return "netbox" }
+
+// this is probably a bad way of doing things if we want to support other types too
+func writeDNSAnswer(record4 *dns.A, record6 *dns.AAAA, w dns.ResponseWriter, r *dns.Msg) {
+
+	answers := []dns.RR{}
+
+	if record4 != nil {
+		answers = append(answers, record4)
+	}
+
+	if record6 != nil {
+		answers = append(answers, record6)
+	}
+
+	m := new(dns.Msg)
+	m.Answer = answers
+	m.SetReply(r)
+	w.WriteMsg(m)
+}
 
 func a(state request.Request, ip_addr string, ttl uint32) *dns.A {
 	rec := new(dns.A)
@@ -94,12 +112,9 @@ func a(state request.Request, ip_addr string, ttl uint32) *dns.A {
 	return rec
 }
 
-func a6(state request.Request, ip_addr string, ttl uint32) *dns.A {
-	rec := new(dns.A)
+func a6(state request.Request, ip_addr string, ttl uint32) *dns.AAAA {
+	rec := new(dns.AAAA)
 	rec.Hdr = dns.RR_Header{Name: state.QName(), Rrtype: dns.TypeAAAA, Class: dns.ClassINET, Ttl: ttl}
-	rec.A = net.ParseIP(ip_addr)
+	rec.AAAA = net.ParseIP(ip_addr)
 	return rec
 }
-
-// Make out a reference to os.Stdout so we can easily overwrite it for testing.
-var out io.Writer = os.Stdout
