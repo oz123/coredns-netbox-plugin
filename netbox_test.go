@@ -16,20 +16,23 @@ package netbox
 
 import (
 	"context"
+	"testing"
+	"time"
+
 	"github.com/coredns/coredns/plugin/pkg/dnstest"
 	"github.com/coredns/coredns/plugin/test"
 	"github.com/miekg/dns"
 	"gopkg.in/h2non/gock.v1"
-	"testing"
-	"time"
 )
+
+var hostWithIPv4 = `{"results": [{"family": {"value": 4, "label": "IPv4"},
+                                 "address": "10.0.0.2/25", "dns_name": "my_host"}]}`
 
 func TestNetbox(t *testing.T) {
 	defer gock.Off() // Flush pending mocks after test execution
 	gock.New("https://example.org/api/ipam/ip-addresses/").MatchParams(
 		map[string]string{"dns_name": "my_host"}).Reply(
-		200).BodyString(
-		`{"count":1, "results":[{"address": "10.0.0.2/25", "dns_name": "my_host"}]}`)
+		200).BodyString(hostWithIPv4)
 	nb := Netbox{Url: "https://example.org/api/ipam/ip-addresses", Token: "s3kr3tt0ken", CacheDuration: time.Second * 10}
 
 	if nb.Name() != "netbox" {

@@ -27,88 +27,23 @@ import (
 )
 
 type Record struct {
-	Family   Family `json:"faily"`
+	Family   Family `json:"family"`
 	Address  string `json:"address"`
 	HostName string `json:"dns_name,omitempty"`
 }
 
 type Family struct {
-	Protocol int    `json:"value"`
-	Label    string `json:"label"`
+	Version int    `json:"value"`
+	Label   string `json:"label"`
 }
 
 type RecordsList struct {
 	Records []Record `json:"results"`
 }
 
-// TODO: deal with multiple IP addresses for the same dns name:
-//{
-//  "count": 2,
-//  "next": null,
-//  "previous": null,
-//  "results": [
-//    {
-//      "id": 7,
-//      "url": "http://localhost:8000/api/ipam/ip-addresses/7/",
-//      "display": "10.0.0.1/25",
-//      "family": {
-//        "value": 4,
-//        "label": "IPv4"
-//      },
-//      "address": "10.0.0.1/25",
-//      "vrf": null,
-//      "tenant": null,
-//      "status": {
-//        "value": "active",
-//        "label": "Active"
-//      },
-//      "role": null,
-//      "assigned_object_type": null,
-//      "assigned_object_id": null,
-//      "assigned_object": null,
-//      "nat_inside": null,
-//      "nat_outside": null,
-//      "dns_name": "mail.foo.com",
-//      "description": "",
-//      "tags": [],
-//      "custom_fields": {},
-//      "created": "2021-12-28",
-//      "last_updated": "2021-12-28T21:36:39.883703Z"
-//    },
-//    {
-//      "id": 6,
-//      "url": "http://localhost:8000/api/ipam/ip-addresses/6/",
-//      "display": "fe80::250:56ff:fe3d:83af/64",
-//      "family": {
-//        "value": 6,
-//        "label": "IPv6"
-//      },
-//      "address": "fe80::250:56ff:fe3d:83af/64",
-//      "vrf": null,
-//      "tenant": null,
-//      "status": {
-//        "value": "active",
-//        "label": "Active"
-//      },
-//      "role": null,
-//      "assigned_object_type": null,
-//      "assigned_object_id": null,
-//      "assigned_object": null,
-//      "nat_inside": null,
-//      "nat_outside": null,
-//      "dns_name": "mail.foo.com",
-//      "description": "",
-//      "tags": [],
-//      "custom_fields": {},
-//      "created": "2021-12-28",
-//      "last_updated": "2021-12-28T14:42:05.160608Z"
-//    }
-//  ]
-//}
-//
 var localCache = ttlmap.New(nil)
 
-func query(url, token, dns_name string, duration time.Duration, protocol int) string {
+func query(url, token, dns_name string, duration time.Duration, family int) string {
 	item, err := localCache.Get(dns_name)
 	if err == nil {
 		clog.Debug(fmt.Sprintf("Found in local cache %s", dns_name))
@@ -158,8 +93,26 @@ func query(url, token, dns_name string, duration time.Duration, protocol int) st
 			return ""
 		}
 
-		ip_address := strings.Split(records.Records[0].Address, "/")[0]
-		localCache.Set(dns_name, ttlmap.NewItem(ip_address, ttlmap.WithTTL(duration)), nil)
+		var ip_address string
+		switch family {
+		case 4:
+			for _, r := range records.Records {
+				if r.Family.Version == 4 {
+					ip_address = strings.Split(r.Address, "/")[0]
+					localCache.Set(dns_name, ttlmap.NewItem(ip_address, ttlmap.WithTTL(duration)), nil)
+					break
+				}
+			}
+		case 6:
+			for _, r := range records.Records {
+				if r.Family.Version == 6 {
+					ip_address = strings.Split(r.Address, "/")[0]
+					localCache.Set(dns_name, ttlmap.NewItem(ip_address, ttlmap.WithTTL(duration)), nil)
+					break
+				}
+			}
+
+		}
 		return ip_address
 	}
 }

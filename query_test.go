@@ -22,12 +22,24 @@ import (
 	"gopkg.in/h2non/gock.v1"
 )
 
+var (
+	anotherHostWithIPv4 = `{"results": [{"family": {"value": 4, "label": "IPv4"},
+                                         "address": "10.0.0.2/25", "dns_name": "my_host"}]}`
+
+	hostWithIPv6 = `{"results": [{"family": {"value": 6, "label": "IPv6"},
+                                  "address": "fe80::250:56ff:fe3d:83af/64", "dns_name": "mail.foo.com"}]}`
+	hostWithMultipleAddresses = `{"results": [{"family": {"value": 4, "label": "IPv4"},
+                                              "address": "10.0.0.1/25", "dns_name": "mail.foo.com"},
+                                              {"family": {"value": 6, "label": "IPv6"},
+                                               "address": "fe80::250:56ff:fe3d:83af/64",
+                                               "dns_name": "mail.foo.com"}]}`
+)
+
 func TestQuery(t *testing.T) {
 	defer gock.Off() // Flush pending mocks after test execution
 	gock.New("https://example.org/api/ipam/ip-addresses/").MatchParams(
 		map[string]string{"dns_name": "my_host"}).Reply(
-		200).BodyString(
-		`{"count":1, "results":[{"address": "10.0.0.2/25", "dns_name": "my_host"}]}`)
+		200).BodyString(anotherHostWithIPv4)
 
 	want := "10.0.0.2"
 	got := query("https://example.org/api/ipam/ip-addresses", "mytoken", "my_host", time.Millisecond*100, 4)
@@ -42,17 +54,28 @@ func TestQueryIPv6(t *testing.T) {
 	defer gock.Off() // Flush pending mocks after test execution
 	gock.New("https://example.org/api/ipam/ip-addresses/").MatchParams(
 		map[string]string{"dns_name": "mail.foo.com"}).Reply(
-		200).BodyString(
-		`{"count":1, "results":[{"address": "fe80::250:56ff:fe3d:83af/64", "dns_name": "mail.foo.com"}]}`)
+		200).BodyString(hostWithIPv6)
 
 	want := "fe80::250:56ff:fe3d:83af"
-	got := query("https://example.org/api/ipam/ip-addresses", "mytoken", "mail.foo.com", time.Millisecond*100, 4)
+	got := query("https://example.org/api/ipam/ip-addresses", "mytoken", "mail.foo.com", time.Millisecond*100, 6)
 	if got != want {
 		t.Fatalf("Expected %s but got %s", want, got)
 	}
 
 }
 
+func TestQueryMultipleAddresses(t *testing.T) {
+	defer gock.Off() // Flush pending mocks after test execution
+	gock.New("https://example.org/api/ipam/ip-addresses/").MatchParams(
+		map[string]string{"dns_name": "mail.foo.com"}).Reply(
+		200).BodyString(hostWithMultipleAddresses)
+	want := "fe80::250:56ff:fe3d:83af"
+	got := query("https://example.org/api/ipam/ip-addresses", "mytoken", "mail.foo.com", time.Millisecond*100, 6)
+	if got != want {
+		t.Fatalf("Expected %s but got %s", want, got)
+	}
+
+}
 func TestNoSuchHost(t *testing.T) {
 
 	defer gock.Off() // Flush pending mocks after test execution
@@ -72,8 +95,7 @@ func TestLocalCache(t *testing.T) {
 	defer gock.Off() // Flush pending mocks after test execution
 	gock.New("https://example.org/api/ipam/ip-addresses/").MatchParams(
 		map[string]string{"dns_name": "my_host"}).Reply(
-		200).BodyString(
-		`{"count":1, "results":[{"address": "10.0.0.2/25", "dns_name": "my_host"}]}`)
+		200).BodyString(anotherHostWithIPv4)
 
 	ip_address := ""
 
@@ -92,8 +114,7 @@ func TestLocalCacheExpiration(t *testing.T) {
 	defer gock.Off() // Flush pending mocks after test execution
 	gock.New("https://example.org/api/ipam/ip-addresses/").MatchParams(
 		map[string]string{"dns_name": "my_host"}).Reply(
-		200).BodyString(
-		`{"count":1, "results":[{"address": "10.0.0.2/25", "dns_name": "my_host"}]}`)
+		200).BodyString(anotherHostWithIPv4)
 
 	query("https://example.org/api/ipam/ip-addresses", "mytoken", "my_host", time.Millisecond*100, 4)
 	<-time.After(101 * time.Millisecond)
