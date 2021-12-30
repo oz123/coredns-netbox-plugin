@@ -1,0 +1,13 @@
+. {
+   debug
+   netbox {
+     token  14ae1c5ae65aa6252a4b5c5c936e046e51d50146
+     url    http://localhost:19000/api/ipam/ip-addresses
+     localCacheDuration 1h
+   }
+
+   hosts {
+        10.0.0.1 example.org
+        fallthrough
+   }
+}

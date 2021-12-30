@@ -33,6 +33,10 @@ coredns-build:
 	cd coredns-1.8.4/ && go get github.com/oz123/coredns-netbox-plugin
 	make -C coredns-$(VERSION)/
 
+.PHONY: coredns-run ## run the compiled version with plugin
+coredns-run:
+	./coredns-$(VERSION)/coredns -conf Corefile.example -p 5300
+
 .PHONY: coredns-clean
 coredns-clean:
 	make -C coredns-$(VERSION) clean
