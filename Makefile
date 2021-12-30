@@ -28,9 +28,9 @@ coredns-patch-go.mod:
 
 .PHONY: coredns-build
 coredns-build:
-	go get github.com/oz123/coredns-netbox-plugin
-	go get github.com/coredns/coredns/plugin/etcd
-	cd coredns-1.8.4/ && go get github.com/oz123/coredns-netbox-plugin
+	#go get github.com/oz123/coredns-netbox-plugin
+	#go get github.com/coredns/coredns/plugin/etcd
+	#cd coredns-1.8.4/ && go get github.com/oz123/coredns-netbox-plugin
 	make -C coredns-$(VERSION)/
 
 .PHONY: coredns-run ## run the compiled version with plugin
