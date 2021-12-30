@@ -113,7 +113,7 @@ func newNetBox(c *caddy.Controller) (Netbox, error) {
 		return Netbox{}, errors.New("Could not parse netbox config")
 	}
 
-	clog.Debug(fmt.Sprintf("Started netbox plugin version %s", VERSION))
+	clog.Info(fmt.Sprintf("Started netbox plugin version %s", VERSION))
 	return Netbox{Url: url, Token: token, CacheDuration: duration}, nil
 
 }

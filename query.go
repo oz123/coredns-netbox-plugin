@@ -54,7 +54,7 @@ func query(url, token, dns_name string, duration time.Duration, family int) stri
 		client := &http.Client{}
 		var resp *http.Response
 		clog.Debug("Querying ", fmt.Sprintf("%s/?dns_name=%s", url, dns_name))
-		logger.Printf("Querying %s ", fmt.Sprintf("%s/?dns_name=%s", url, dns_name))
+		//logger.Printf("Querying %s ", fmt.Sprintf("%s/?dns_name=%s", url, dns_name))
 		req, err := http.NewRequest("GET", fmt.Sprintf("%s/?dns_name=%s", url, dns_name), nil)
 		req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
 
@@ -77,7 +77,7 @@ func query(url, token, dns_name string, duration time.Duration, family int) stri
 		}
 
 		body, err := ioutil.ReadAll(resp.Body)
-		logger.Printf("%s", body)
+		//logger.Printf("%s", body)
 		if err != nil {
 			clog.Fatalf("Error reading body %v", err)
 		}

@@ -8,6 +8,7 @@
 
    hosts {
         10.0.0.1 example.org
+	10.0.0.3 definitely-not-in-netbox.org
         fallthrough
    }
 }
