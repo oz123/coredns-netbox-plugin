@@ -16,13 +16,18 @@ package netbox
 
 import (
 	"errors"
+	"fmt"
+	"time"
+
 	"github.com/coredns/coredns/core/dnsserver"
 	"github.com/coredns/coredns/plugin"
 	"github.com/coredns/coredns/plugin/metrics"
-	"time"
+	clog "github.com/coredns/coredns/plugin/pkg/log"
 
 	"github.com/coredns/caddy"
 )
+
+var VERSION = "0.1.1-dev"
 
 // init registers this plugin.
 func init() { plugin.Register("netbox", setup) }
@@ -108,6 +113,7 @@ func newNetBox(c *caddy.Controller) (Netbox, error) {
 		return Netbox{}, errors.New("Could not parse netbox config")
 	}
 
+	clog.Debug(fmt.Sprintf("Started netbox plugin version %s", VERSION))
 	return Netbox{Url: url, Token: token, CacheDuration: duration}, nil
 
 }
