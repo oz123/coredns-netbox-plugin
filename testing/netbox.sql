@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 12.8
--- Dumped by pg_dump version 12.8
+-- Dumped from database version 12.9
+-- Dumped by pg_dump version 12.9
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -5515,7 +5515,7 @@ COPY public.auth_permission (id, name, content_type_id, codename) FROM stdin;
 --
 
 COPY public.auth_user (id, password, last_login, is_superuser, username, first_name, last_name, email, is_staff, is_active, date_joined) FROM stdin;
-1	pbkdf2_sha256$260000$eVjfesgrOjME16oHkdbNYC$2+i6Dfay/aJbKtHlp4zSqrGD0o/J/3WLuox9qHiV/HY=	2021-08-17 12:53:33.198156+00	t	admin			admin@example.com	t	t	2021-08-17 12:17:35.007201+00
+1	pbkdf2_sha256$260000$eVjfesgrOjME16oHkdbNYC$2+i6Dfay/aJbKtHlp4zSqrGD0o/J/3WLuox9qHiV/HY=	2021-12-28 14:36:43.641766+00	t	admin			admin@example.com	t	t	2021-08-17 12:17:35.007201+00
 \.
 
 
@@ -6362,6 +6362,7 @@ COPY public.django_migrations (id, app, name, applied) FROM stdin;
 
 COPY public.django_session (session_key, session_data, expire_date) FROM stdin;
 pggakkdly06mxqrktrb3v5jkqhgk60xw	.eJxVjEsKwjAUAO-StZR8-1qXXkBvEF5eniSKKTQpCOLdTcGFbmeGeQmPW0t-q7z6HMVRKHH4ZQHpzmUXhVtYnsOuuLRM2PJShnO4MbULr49cawenb_83SVhTP8TRTVqNVzYxuqgByIC20mmLUUKYlUYNTs6mA0tkMAS2EwNZKyXCKN4fIiU5gA:1mFyaz:v_I6vJ-GlVeDfL2g5H2qGebYCtitbxYa6NXmE_2C_Vg	2021-08-31 12:53:33.211188+00
+pm1dmpqofzvc19kwjtmtitcfckyk0nok	.eJxVjEsKwjAUAO-StZR8-1qXXkBvEF5eniSKKTQpCOLdTcGFbmeGeQmPW0t-q7z6HMVRKHH4ZQHpzmUXhVtYnsOuuLRM2PJShnO4MbULr49cawenb_83SVhTP8TRTVqNVzYxuqgByIC20mmLUUKYlUYNTs6mA0tkMAS2EwNZKyXCKN4fIiU5gA:1n2Dal:X3dcTvfUrAT3PF7fY4_uwNuY4fRR2gf-qylOk0extaM	2022-01-11 14:36:43.655603+00
 \.
 
 
@@ -6518,6 +6519,20 @@ COPY public.extras_journalentry (id, assigned_object_id, created, last_updated, 
 
 
 --
+-- Data for Name: extras_objectchange; Type: TABLE DATA; Schema: public; Owner: netbox
+--
+
+COPY public.extras_objectchange (id, "time", user_name, request_id, action, changed_object_id, related_object_id, object_repr, postchange_data, changed_object_type_id, related_object_type_id, user_id, prechange_data) FROM stdin;
+85	2021-12-28 14:42:05.1922+00	admin	3199bb30-2b99-463a-a4e0-368c56e18399	create	6	\N	fe80::250:56ff:fe3d:83af/64	{"vrf": null, "role": "", "tags": [], "status": "active", "tenant": null, "address": "fe80::250:56ff:fe3d:83af/64", "created": "2021-12-28", "dns_name": "mail.foo.com", "nat_inside": null, "description": "", "last_updated": "2021-12-28T14:42:05.160Z", "custom_fields": {}, "assigned_object_id": null, "assigned_object_type": null}	52	\N	1	\N
+86	2021-12-28 21:36:39.915727+00	admin	283b3a50-a6fa-4282-9b04-57ba7c439eb3	create	7	\N	10.0.0.1/25	{"vrf": null, "role": "", "tags": [], "status": "active", "tenant": null, "address": "10.0.0.1/25", "created": "2021-12-28", "dns_name": "mail.foo.com", "nat_inside": null, "description": "", "last_updated": "2021-12-28T21:36:39.883Z", "custom_fields": {}, "assigned_object_id": null, "assigned_object_type": null}	52	\N	1	\N
+87	2021-12-29 15:22:01.05259+00	admin	e0c4d845-8cfa-45bc-b0bd-59ee4a5dad32	create	8	\N	fe80::250:56ff:fe3d:8faf/64	{"vrf": null, "role": "", "tags": [], "status": "active", "tenant": null, "address": "fe80::250:56ff:fe3d:8faf/64", "created": "2021-12-29", "dns_name": "", "nat_inside": null, "description": "", "last_updated": "2021-12-29T15:22:01.014Z", "custom_fields": {}, "assigned_object_id": null, "assigned_object_type": null}	52	\N	1	\N
+88	2021-12-30 13:48:58.506048+00	admin	dd578731-55cc-4fc2-bd71-d2e9bcc19535	update	8	\N	fe80::250:56ff:fe3d:8faf/64	{"vrf": null, "role": "", "tags": [], "status": "active", "tenant": null, "address": "fe80::250:56ff:fe3d:8faf/64", "created": "2021-12-29", "dns_name": "mail.foo.com", "nat_inside": null, "description": "", "last_updated": "2021-12-30T13:48:58.490Z", "custom_fields": {}, "assigned_object_id": null, "assigned_object_type": null}	52	\N	1	{"vrf": null, "role": "", "tags": [], "status": "active", "tenant": null, "address": "fe80::250:56ff:fe3d:8faf/64", "created": "2021-12-29", "dns_name": "", "nat_inside": null, "description": "", "last_updated": "2021-12-29T15:22:01.014Z", "custom_fields": {}, "assigned_object_id": null, "assigned_object_type": null}
+89	2021-12-30 13:50:01.659558+00	admin	5ce6a968-8479-436b-a10f-9c515e01fcdb	update	8	\N	fe80::250:56ff:fe3d:8faf/64	{"vrf": null, "role": "", "tags": [], "status": "active", "tenant": null, "address": "fe80::250:56ff:fe3d:8faf/64", "created": "2021-12-29", "dns_name": "mail2.foo.com", "nat_inside": null, "description": "", "last_updated": "2021-12-30T13:50:01.648Z", "custom_fields": {}, "assigned_object_id": null, "assigned_object_type": null}	52	\N	1	{"vrf": null, "role": "", "tags": [], "status": "active", "tenant": null, "address": "fe80::250:56ff:fe3d:8faf/64", "created": "2021-12-29", "dns_name": "mail.foo.com", "nat_inside": null, "description": "", "last_updated": "2021-12-30T13:48:58.490Z", "custom_fields": {}, "assigned_object_id": null, "assigned_object_type": null}
+90	2021-12-30 13:51:13.672736+00	admin	7d101af9-5012-4349-b188-f8b595ae2a05	update	6	\N	fe80::250:56ff:fe2d:8faf/64	{"vrf": null, "role": "", "tags": [], "status": "active", "tenant": null, "address": "fe80::250:56ff:fe2d:8faf/64", "created": "2021-12-28", "dns_name": "mail.foo.com", "nat_inside": null, "description": "", "last_updated": "2021-12-30T13:51:13.658Z", "custom_fields": {}, "assigned_object_id": null, "assigned_object_type": null}	52	\N	1	{"vrf": null, "role": "", "tags": [], "status": "active", "tenant": null, "address": "fe80::250:56ff:fe3d:83af/64", "created": "2021-12-28", "dns_name": "mail.foo.com", "nat_inside": null, "description": "", "last_updated": "2021-12-28T14:42:05.160Z", "custom_fields": {}, "assigned_object_id": null, "assigned_object_type": null}
+\.
+
+
+--
 -- Data for Name: extras_tag; Type: TABLE DATA; Schema: public; Owner: netbox
 --
 
@@ -6566,6 +6581,9 @@ COPY public.ipam_ipaddress (id, created, last_updated, address, description, ass
 4	2021-08-17	2021-08-17 19:33:51.600045+00	192.168.1.3/25		\N	\N	\N	\N	reserved	anycast	ohl03	\N	{}
 2	2021-08-17	2021-08-17 19:50:49.615754+00	192.168.1.1/25		2	\N	\N	\N	reserved	anycast	ohl01	5	{}
 5	2021-08-17	2021-08-17 19:54:31.85008+00	192.168.1.0/25		3	\N	\N	\N	reserved	anycast	ohl00	5	{}
+7	2021-12-28	2021-12-28 21:36:39.883703+00	10.0.0.1/25		\N	\N	\N	\N	active		mail.foo.com	\N	{}
+8	2021-12-29	2021-12-30 13:50:01.648972+00	fe80::250:56ff:fe3d:8faf/64		\N	\N	\N	\N	active		mail2.foo.com	\N	{}
+6	2021-12-28	2021-12-30 13:51:13.658311+00	fe80::250:56ff:fe2d:8faf/64		\N	\N	\N	\N	active		mail.foo.com	\N	{}
 \.
 
 
@@ -7312,7 +7330,7 @@ SELECT pg_catalog.setval('public.extras_journalentry_id_seq', 1, false);
 -- Name: extras_objectchange_id_seq; Type: SEQUENCE SET; Schema: public; Owner: netbox
 --
 
-SELECT pg_catalog.setval('public.extras_objectchange_id_seq', 84, true);
+SELECT pg_catalog.setval('public.extras_objectchange_id_seq', 90, true);
 
 
 --
@@ -7354,7 +7372,7 @@ SELECT pg_catalog.setval('public.ipam_aggregate_id_seq', 1, false);
 -- Name: ipam_ipaddress_id_seq; Type: SEQUENCE SET; Schema: public; Owner: netbox
 --
 
-SELECT pg_catalog.setval('public.ipam_ipaddress_id_seq', 5, true);
+SELECT pg_catalog.setval('public.ipam_ipaddress_id_seq', 8, true);
 
 
 --
