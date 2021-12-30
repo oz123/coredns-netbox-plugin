@@ -1,8 +1,8 @@
 . {
    debug
    netbox {
-     token  14ae1c5ae65aa6252a4b5c5c936e046e51d50146
-     url    http://localhost:19000/api/ipam/ip-addresses
+     token  0123456789abcdef0123456789abcdef01234567
+     url    http://localhost:8000/api/ipam/ip-addresses
      localCacheDuration 1h
    }
 
