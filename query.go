@@ -16,13 +16,11 @@ package netbox
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	logger "log"
+	"net"
 	"net/http"
 	"strings"
 	"time"
 
-	clog "github.com/coredns/coredns/plugin/pkg/log"
 	"github.com/imkira/go-ttlmap"
 )
 
@@ -43,76 +41,94 @@ type RecordsList struct {
 
 var localCache = ttlmap.New(nil)
 
-func query(url, token, dns_name string, duration time.Duration, family int) string {
-	item, err := localCache.Get(dns_name)
-	if err == nil {
-		clog.Debug(fmt.Sprintf("Found in local cache %s", dns_name))
-		logger.Printf("Found in local cache %s", dns_name)
-		return item.Value().(string)
-	} else {
-		records := RecordsList{}
-		client := &http.Client{}
-		var resp *http.Response
-		clog.Debug("Querying ", fmt.Sprintf("%s/?dns_name=%s", url, dns_name))
-		//logger.Printf("Querying %s ", fmt.Sprintf("%s/?dns_name=%s", url, dns_name))
-		req, err := http.NewRequest("GET", fmt.Sprintf("%s/?dns_name=%s", url, dns_name), nil)
-		req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
-
-		for i := 1; i <= 10; i++ {
-			resp, err = client.Do(req)
-
-			if err != nil {
-				clog.Fatalf("HTTP Error %v", err)
-			}
-
-			if resp.StatusCode == http.StatusOK {
-				break
-			}
-
-			time.Sleep(1 * time.Second)
-		}
-
-		if resp.StatusCode != http.StatusOK {
-			return ""
-		}
-
-		body, err := ioutil.ReadAll(resp.Body)
-		//logger.Printf("%s", body)
-		if err != nil {
-			clog.Fatalf("Error reading body %v", err)
-		}
-
-		jsonAns := string(body)
-		err = json.Unmarshal([]byte(jsonAns), &records)
-		if err != nil {
-			clog.Fatalf("could not unmarshal response %v", err)
-		}
-
-		if len(records.Records) == 0 {
-			clog.Info("Recored not found in", jsonAns)
-			return ""
-		}
-
-		var ip_address string
-		switch family {
-		case 4:
-			for _, r := range records.Records {
-				if r.Family.Version == 4 {
-					ip_address = strings.Split(r.Address, "/")[0]
-					localCache.Set(dns_name, ttlmap.NewItem(ip_address, ttlmap.WithTTL(duration)), nil)
-					break
-				}
-			}
-		case 6:
-			for _, r := range records.Records {
-				if r.Family.Version == 6 {
-					ip_address = strings.Split(r.Address, "/")[0]
-					localCache.Set(dns_name, ttlmap.NewItem(ip_address, ttlmap.WithTTL(duration)), nil)
-					break
-				}
-			}
-
-		}
-		return ip_address
+func get(url, token string, timeout time.Duration) (*http.Response, error) {
+	client := &http.Client{
+		Timeout: timeout,
 	}
+
+	// set up HTTP request
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// set authorization header for request to NetBox
+	req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
+
+	// do request
+	return client.Do(req)
+}
+
+func (n *Netbox) query(host string, family int) ([]net.IP, error) {
+	var (
+		dns_name = strings.TrimSuffix(host, ".")
+		requrl   = fmt.Sprintf("%s/?dns_name=%s", n.Url, dns_name)
+		records  RecordsList
+	)
+
+	addresses := make([]net.IP, 0)
+
+	// attempt to retrieve from cache if not disabled
+	if n.CacheDuration != 0 {
+		if item, err := localCache.Get(cachekey(dns_name, family)); err == nil {
+			log.Debugf("Found in local cache %s", dns_name)
+			return item.Value().([]net.IP), nil
+		}
+	}
+
+	qtype := "A"
+	if family == familyIP6 {
+		qtype = "AAAA"
+	}
+	log.Debugf("Querying %s for %s", requrl, qtype)
+
+	// do http request against NetBox instance
+	resp, err := get(requrl, n.Token, n.Timeout)
+	if err != nil {
+		return addresses, fmt.Errorf("Problem performing request: %w", err)
+	}
+
+	// ensure body is closed once we are done
+	defer resp.Body.Close()
+
+	// status code must be http.StatusOK
+	if resp.StatusCode != http.StatusOK {
+		return addresses, fmt.Errorf("Bad HTTP response code: %d", resp.StatusCode)
+	}
+
+	// read and parse response body
+	decoder := json.NewDecoder(resp.Body)
+	if err := decoder.Decode(&records); err != nil {
+		return addresses, fmt.Errorf("Could not unmarshal response: %w", err)
+	}
+
+	if len(records.Records) == 0 {
+		return addresses, nil
+	}
+
+	// grab returned address of specified address family
+	for _, r := range records.Records {
+		if r.Family.Version == family {
+			if addr := net.ParseIP(strings.Split(r.Address, "/")[0]); addr != nil {
+				addresses = append(addresses, addr)
+			}
+		}
+	}
+
+	log.Debugf("Got %d %s responses from %s", len(addresses), qtype, requrl)
+
+	// cache if duration is non-zero and there were matching addresses
+	if n.CacheDuration != 0 && len(addresses) > 0 {
+		expiration := ttlmap.WithTTL(n.CacheDuration)
+		if err := localCache.Set(cachekey(dns_name, family), ttlmap.NewItem(addresses, expiration), nil); err != nil {
+			log.Warningf("Error adding %s to local cache: %s", dns_name, err)
+		}
+	}
+
+	return addresses, nil
+}
+
+// cachekey ensures we have a consistent key to cache items
+func cachekey(name string, family int) string {
+	return fmt.Sprintf("%s_%d", name, family)
 }

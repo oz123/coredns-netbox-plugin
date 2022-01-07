@@ -19,11 +19,11 @@ import (
 	"io"
 	"net"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/coredns/coredns/plugin"
 	"github.com/coredns/coredns/plugin/metrics"
+	"github.com/coredns/coredns/plugin/pkg/fall"
 	clog "github.com/coredns/coredns/plugin/pkg/log"
 	"github.com/coredns/coredns/request"
 	"github.com/miekg/dns"
@@ -40,81 +40,121 @@ type Netbox struct {
 	Url           string
 	Token         string
 	CacheDuration time.Duration
+	Timeout       time.Duration
+	TTL           uint32
 	Next          plugin.Handler
+	Fall          fall.F
+	Zones         []string
 }
 
+// constants to match IP address family used by NetBox
+const (
+	familyIP4 = 4
+	familyIP6 = 6
+)
+
 func (n Netbox) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) (int, error) {
+	var (
+		ips []net.IP
+		err error
+	)
 
 	// TODO: check DNS request type here
 	// https://en.wikipedia.org/wiki/List_of_DNS_record_types
 	// if this is not A or AAAA return early
 	state := request.Request{W: w, Req: r}
 
-	// Export metric with the server label set to the current
-	// server handling the request.
-	requestCount.WithLabelValues(metrics.WithServer(ctx)).Inc()
-	var (
-		ip_address string = ""
-		record4    *dns.A
-		record6    *dns.AAAA
-	)
-
-	switch state.QType() {
-
-	case dns.TypeA:
-		ip_address = query(n.Url, n.Token, strings.TrimRight(state.QName(), "."), n.CacheDuration, 4)
-		// no IP is found in netbox pass processing to the next plugin
-		record4 = a(state, ip_address, 3600)
-	case dns.TypeAAAA:
-		ip_address = query(n.Url, n.Token, strings.TrimRight(state.QName(), "."), n.CacheDuration, 6)
-		record6 = a6(state, ip_address, 3600)
-	default:
-		// TODO: is dns.RcodeServerFailure the correct answer?
-		// maybe dns.RcodeNotImplemented is more appropriate?
-		return dns.RcodeServerFailure, nil
-	}
-
-	if len(ip_address) == 0 {
+	// only handle zones we are configured to respond for
+	zone := plugin.Zones(n.Zones).Matches(state.Name())
+	if zone == "" {
 		return plugin.NextOrFailure(n.Name(), n.Next, ctx, w, r)
 	}
 
-	writeDNSAnswer(record4, record6, w, r)
-	return dns.RcodeSuccess, nil
+	qname := state.Name()
+	answers := []dns.RR{}
 
+	// Export metric with the server label set to the current
+	// server handling the request.
+	requestCount.WithLabelValues(metrics.WithServer(ctx)).Inc()
+
+	// handle A and AAAA records only
+	switch state.QType() {
+	case dns.TypeA:
+		ips, err = n.query(qname, familyIP4)
+		answers = a(qname, n.TTL, ips)
+	case dns.TypeAAAA:
+		ips, err = n.query(qname, familyIP6)
+		answers = aaaa(qname, n.TTL, ips)
+	}
+
+	if err != nil {
+		// fallthrough on error
+		if n.Fall.Through(qname) {
+			return plugin.NextOrFailure(n.Name(), n.Next, ctx, w, r)
+		}
+
+		// return failure here without fallthrough
+		return dnserror(dns.RcodeServerFailure, state, err)
+	}
+
+	if len(answers) == 0 {
+		// fallthrough on NXDOMAIN too
+		if n.Fall.Through(qname) {
+			return plugin.NextOrFailure(n.Name(), n.Next, ctx, w, r)
+		}
+
+		// return NXDOMAIN without fallthrough
+		// TODO: this is not cached for some reason so subsequent requests trigger HTTP calls
+		return dnserror(dns.RcodeNameError, state, nil)
+	}
+
+	// create DNS response
+	m := new(dns.Msg)
+	m.SetReply(r)
+	m.Authoritative = true
+	m.Answer = answers
+
+	w.WriteMsg(m)
+
+	// signal response sent back to client
+	return dns.RcodeSuccess, nil
 }
 
 // Name implements the Handler interface.
 func (n Netbox) Name() string { return "netbox" }
 
-// this is probably a bad way of doing things if we want to support other types too
-func writeDNSAnswer(record4 *dns.A, record6 *dns.AAAA, w dns.ResponseWriter, r *dns.Msg) {
-
-	answers := []dns.RR{}
-
-	if record4 != nil {
-		answers = append(answers, record4)
+func a(zone string, ttl uint32, ips []net.IP) []dns.RR {
+	answers := make([]dns.RR, len(ips))
+	for i, ip := range ips {
+		r := new(dns.A)
+		r.Hdr = dns.RR_Header{Name: zone, Rrtype: dns.TypeA, Class: dns.ClassINET, Ttl: ttl}
+		r.A = ip
+		answers[i] = r
 	}
+	return answers
+}
 
-	if record6 != nil {
-		answers = append(answers, record6)
+// aaaa takes a slice of net.IPs and returns a slice of AAAA RRs.
+func aaaa(zone string, ttl uint32, ips []net.IP) []dns.RR {
+	answers := make([]dns.RR, len(ips))
+	for i, ip := range ips {
+		r := new(dns.AAAA)
+		r.Hdr = dns.RR_Header{Name: zone, Rrtype: dns.TypeAAAA, Class: dns.ClassINET, Ttl: ttl}
+		r.AAAA = ip
+		answers[i] = r
 	}
+	return answers
+}
 
+// writes a DNS error response back to the client. Based on plugin.BackendError
+func dnserror(rcode int, state request.Request, err error) (int, error) {
 	m := new(dns.Msg)
-	m.Answer = answers
-	m.SetReply(r)
-	w.WriteMsg(m)
-}
+	m.SetRcode(state.Req, rcode)
+	m.Authoritative = true
 
-func a(state request.Request, ip_addr string, ttl uint32) *dns.A {
-	rec := new(dns.A)
-	rec.Hdr = dns.RR_Header{Name: state.QName(), Rrtype: dns.TypeA, Class: dns.ClassINET, Ttl: ttl}
-	rec.A = net.ParseIP(ip_addr)
-	return rec
-}
+	// send response
+	state.W.WriteMsg(m)
 
-func a6(state request.Request, ip_addr string, ttl uint32) *dns.AAAA {
-	rec := new(dns.AAAA)
-	rec.Hdr = dns.RR_Header{Name: state.QName(), Rrtype: dns.TypeAAAA, Class: dns.ClassINET, Ttl: ttl}
-	rec.AAAA = net.ParseIP(ip_addr)
-	return rec
+	// return success as the rcode to signal we have written to the client.
+	return dns.RcodeSuccess, err
 }

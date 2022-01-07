@@ -14,6 +14,18 @@
 
 package netbox
 
-// TODO: check that the connection with TOKEN and URL
-// returns HTTP 200
-func (n Netbox) Ready() bool { return true }
+import (
+	"fmt"
+	"net/http"
+)
+
+// Ready returns true if the NetBox API can be reached and returns a HTTP 200
+// response using the configured url and token
+func (n Netbox) Ready() bool {
+	resp, err := get(fmt.Sprintf("%s/?dns_name=%s", n.Url, "test-dns-name.example.org"), n.Token, n.Timeout)
+	if err != nil {
+		return false
+	}
+
+	return resp.StatusCode == http.StatusOK
+}

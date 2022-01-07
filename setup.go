@@ -15,14 +15,12 @@
 package netbox
 
 import (
-	"errors"
-	"fmt"
+	"net/url"
 	"time"
 
 	"github.com/coredns/coredns/core/dnsserver"
 	"github.com/coredns/coredns/plugin"
 	"github.com/coredns/coredns/plugin/metrics"
-	clog "github.com/coredns/coredns/plugin/pkg/log"
 
 	"github.com/coredns/caddy"
 )
@@ -32,11 +30,11 @@ var VERSION = "0.1.1-dev"
 // init registers this plugin.
 func init() { plugin.Register("netbox", setup) }
 
-// setup is the function that gets called when the config parser see the token "example". Setup is responsible
-// for parsing any extra options the example plugin may have. The first token this function sees is "example".
+// setup is the function that gets called when the config parser see the token "netbox". Setup is responsible
+// for parsing any extra options the netbox plugin may have. The first token this function sees is "netbox".
 func setup(c *caddy.Controller) error {
 
-	netboxPlugin, err := newNetBox(c)
+	n, err := parseNetbox(c)
 	if err != nil {
 		return plugin.Error("netbox", err)
 	}
@@ -59,61 +57,107 @@ func setup(c *caddy.Controller) error {
 
 	// Add the Plugin to CoreDNS, so Servers can use it in their plugin chain.
 	dnsserver.GetConfig(c).AddPlugin(func(next plugin.Handler) plugin.Handler {
-		return netboxPlugin
+		n.Next = next
+		return n
 	})
 
 	// All OK, return a nil error.
 	return nil
 }
 
-func newNetBox(c *caddy.Controller) (Netbox, error) {
+func newNetbox() *Netbox {
+	return &Netbox{
+		CacheDuration: 0,
+		Timeout:       10 * time.Second,
+		TTL:           3600,
+		Zones:         []string{"."},
+	}
+}
 
-	url := ""
-	token := ""
-	localCacheDuration := ""
-	duration := time.Second
-	var err error
-
+func parseNetbox(c *caddy.Controller) (*Netbox, error) {
+	n := newNetbox()
+	i := 0
 	for c.Next() {
-		if c.NextBlock() {
-			for {
-				switch c.Val() {
-				case "url":
-					if !c.NextArg() {
-						c.ArgErr()
-					}
-					url = c.Val()
+		if i > 0 {
+			return nil, plugin.ErrOnce
+		}
+		i++
 
-				case "token":
-					if !c.NextArg() {
-						c.ArgErr()
-					}
-					token = c.Val()
+		// netbox [zones...]
+		zones := plugin.OriginsFromArgsOrServerBlock(c.RemainingArgs(), c.ServerBlockKeys)
+		if len(zones) == 0 {
+			zones = []string{"."}
+		}
+		n.Zones = zones
 
-				case "localCacheDuration":
-					if !c.NextArg() {
-						c.ArgErr()
-					}
-					localCacheDuration = c.Val()
-					duration, err = time.ParseDuration(localCacheDuration)
-					if err != nil {
-						localCacheDuration = ""
-					}
+		// parse inside block
+		for c.NextBlock() {
+			switch c.Val() {
+			case "fallthrough":
+				n.Fall.SetZonesFromArgs(c.RemainingArgs())
+
+			case "url":
+				if !c.NextArg() {
+					return n, c.ArgErr()
 				}
-
-				if !c.Next() {
-					break
+				apiurl, err := url.Parse(c.Val())
+				if err != nil {
+					return n, c.Errf("could not parse 'url': %s", err)
 				}
+				if apiurl.Scheme != "http" && apiurl.Scheme != "https" {
+					return n, c.Errf("unsupported scheme for 'url': %s", apiurl.String())
+				}
+				n.Url = apiurl.String()
+
+			case "timeout":
+				if !c.NextArg() {
+					return n, c.ArgErr()
+				}
+				duration, err := time.ParseDuration(c.Val())
+				if err != nil {
+					return n, c.Errf("could not parse 'timeout': %s", err)
+				}
+				n.Timeout = duration
+
+			case "token":
+				if !c.NextArg() {
+					return n, c.ArgErr()
+				}
+				n.Token = c.Val()
+
+			case "ttl":
+				if !c.NextArg() {
+					return n, c.ArgErr()
+				}
+				duration, err := time.ParseDuration(c.Val())
+				if err != nil {
+					return n, c.Errf("could not parse 'ttl': %s", err)
+				}
+				n.TTL = uint32(duration)
+
+			case "localCacheDuration":
+				log.Warning("Consider using the cache plugin instead of using localCacheDuration")
+				if !c.NextArg() {
+					return n, c.ArgErr()
+				}
+				duration, err := time.ParseDuration(c.Val())
+				if err != nil {
+					return n, c.Errf("could not parse 'localCacheDuration': %s", err)
+				}
+				n.CacheDuration = duration
+
+			default:
+				return n, c.Errf("unknown property '%s'", c.Val())
 			}
 		}
-
 	}
 
-	if url == "" || token == "" || localCacheDuration == "" {
-		return Netbox{}, errors.New("Could not parse netbox config")
+	// fail if either url or token are not set
+	if n.Url == "" || n.Token == "" {
+		return n, c.Err("Invalid config")
 	}
 
-	clog.Info(fmt.Sprintf("Started netbox plugin version %s", VERSION))
-	return Netbox{Url: url, Token: token, CacheDuration: duration}, nil
+	log.Infof("Version %s", VERSION)
 
+	return n, nil
 }

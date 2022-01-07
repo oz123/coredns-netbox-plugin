@@ -16,35 +16,68 @@ package netbox
 
 import (
 	//"fmt"
+
 	"testing"
-	"time"
 
 	"github.com/coredns/caddy"
 	"github.com/stretchr/testify/assert"
 )
 
+var ()
+
 // TestSetup tests the various things that should be parsed by setup.
 // Make sure you also test for parse errors.
 func TestSetup(t *testing.T) {
-	c := caddy.NewTestController("dns", `netbox { url example.org\n token foobar\n localCacheDuration 10s }`)
-	if err := setup(c); err != nil {
-		t.Fatalf("Expected no errors, but got: %v", err)
+	tests := []struct {
+		name    string
+		input   string
+		wantErr bool
+	}{
+		{"minimal valid config", "netbox {\nurl http://example.org\ntoken foobar\n}\n", false},
+		{"minimal valid config with zones", "netbox example.org {\nurl http://example.org\ntoken foobar\n}\n", false},
+		{"minimal config with fallthrough", "netbox {\nurl http://example.org\ntoken foobar\nfallthrough\n}\n", false},
+		{"empty config a", "netbox { }\n", true},
+		{"empty config b", "netbox\n", true},
+		{"missing url", "netbox {\nurl\ntoken foobar\n}\n", true},
+		{"invalid url", "netbox {\nurl ftp://blah/something\ntoken foobar\n}\n", true},
+		{"valid duration for ttl", "netbox {\nurl http://example.org\ntoken foobar\nttl 300s\n}\n", false},
+		{"invalid duration for ttl", "netbox {\nurl http://example.org\ntoken foobar\nttl INVALID\n}\n", true},
 	}
-
-	c = caddy.NewTestController("dns", `netbox {}`)
-	if err := setup(c); err == nil {
-		t.Fatalf("Expected errors, but got: %v", err)
+	for _, tt := range tests {
+		c := caddy.NewTestController("dns", tt.input)
+		err := setup(c)
+		if tt.wantErr {
+			assert.Error(t, err, tt.name)
+		} else {
+			assert.NoError(t, err, tt.name)
+		}
 	}
 }
 
-func TestSetupWithWrongDuration(t *testing.T) {
-	c := caddy.NewTestController("dns", `netbox { url example.org\n token foobar\n localCacheDuration Wrong }`)
-	_, err := newNetBox(c)
-	assert.Error(t, err, "Expected error")
-}
+func TestParseNetbox(t *testing.T) {
+	tests := []struct {
+		name      string
+		input     string
+		wantErr   bool
+		wantUrl   string
+		wantToken string
+		wantZones []string
+	}{
+		{"all zones", "netbox {\nurl http://example.org\ntoken foobar\n}\n", false, "http://example.org", "foobar", []string{"."}},
+		{"specific zone", "netbox example.org {\nurl http://example.org\ntoken foobar\n}\n", false, "http://example.org", "foobar", []string{"example.org."}},
+		{"multiple zones", "netbox example.org example.net {\nurl http://example.org\ntoken foobar\n}\n", false, "http://example.org", "foobar", []string{"example.org.", "example.net."}},
+	}
+	for _, tt := range tests {
+		c := caddy.NewTestController("dns", tt.input)
+		n, err := parseNetbox(c)
+		if tt.wantErr {
+			assert.Error(t, err, tt.name)
+		} else {
+			assert.NoError(t, err, tt.name)
+			assert.Equal(t, tt.wantToken, n.Token, tt.name)
+			assert.Equal(t, tt.wantUrl, n.Url, tt.name)
+			assert.Equal(t, tt.wantZones, n.Zones, tt.name)
+		}
+	}
 
-func TestSetupWithDuration(t *testing.T) {
-	c := caddy.NewTestController("dns", `netbox { url example.org\n token foobar\n localCacheDuration 10s }`)
-	nb, _ := newNetBox(c)
-	assert.Equal(t, nb.CacheDuration, time.Second*10, "Duration not set properly")
 }
