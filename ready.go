@@ -14,6 +14,36 @@
 
 package netbox
 
-// TODO: check that the connection with TOKEN and URL
-// returns HTTP 200
-func (n Netbox) Ready() bool { return true }
+import (
+	"fmt"
+	"net/http"
+
+	clog "github.com/coredns/coredns/plugin/pkg/log"
+)
+
+func (n Netbox) Ready() bool {
+	client := &http.Client{}
+	var resp *http.Response
+
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/?limit=1", n.Url), nil)
+	req.Header.Set("Authorization", fmt.Sprintf("Token %s", n.Token))
+
+	if err != nil {
+		clog.Warning("Could not setup HTTP request, check your configuration\n")
+		return false
+	}
+
+	resp, err = client.Do(req)
+
+	if err != nil {
+		clog.Warning("Could HTTP request failed, check your configuration\n")
+		return false
+	}
+
+	if resp.StatusCode == http.StatusOK {
+		return true
+	} else {
+		clog.Warning(fmt.Sprintf("The server returned error code: %d\n", resp.StatusCode))
+		return false
+	}
+}
