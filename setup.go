@@ -16,13 +16,11 @@ package netbox
 
 import (
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/coredns/coredns/core/dnsserver"
 	"github.com/coredns/coredns/plugin"
 	"github.com/coredns/coredns/plugin/metrics"
-	clog "github.com/coredns/coredns/plugin/pkg/log"
 
 	"github.com/coredns/caddy"
 )
@@ -67,12 +65,9 @@ func setup(c *caddy.Controller) error {
 }
 
 func newNetBox(c *caddy.Controller) (Netbox, error) {
-
-	url := ""
-	token := ""
-	localCacheDuration := ""
-	duration := time.Second
-	var err error
+	var n = Netbox{
+		TTL: 3600 * time.Second,
+	}
 
 	for c.Next() {
 		if c.NextBlock() {
@@ -80,25 +75,34 @@ func newNetBox(c *caddy.Controller) (Netbox, error) {
 				switch c.Val() {
 				case "url":
 					if !c.NextArg() {
-						c.ArgErr()
+						return Netbox{}, c.ArgErr()
 					}
-					url = c.Val()
+					n.Url = c.Val()
 
 				case "token":
 					if !c.NextArg() {
-						c.ArgErr()
+						return Netbox{}, c.ArgErr()
 					}
-					token = c.Val()
+					n.Token = c.Val()
 
 				case "localCacheDuration":
 					if !c.NextArg() {
-						c.ArgErr()
+						return Netbox{}, c.ArgErr()
 					}
-					localCacheDuration = c.Val()
-					duration, err = time.ParseDuration(localCacheDuration)
+					duration, err := time.ParseDuration(c.Val())
 					if err != nil {
-						localCacheDuration = ""
+						return Netbox{}, c.Errf("invalid 'localCacheDuration': %s", err)
 					}
+					n.CacheDuration = duration
+				case "ttl":
+					if !c.NextArg() {
+						return Netbox{}, c.ArgErr()
+					}
+					duration, err := time.ParseDuration(c.Val())
+					if err != nil {
+						return Netbox{}, c.Errf("invalid 'ttl': %s", err)
+					}
+					n.TTL = duration
 				}
 
 				if !c.Next() {
@@ -109,11 +113,11 @@ func newNetBox(c *caddy.Controller) (Netbox, error) {
 
 	}
 
-	if url == "" || token == "" || localCacheDuration == "" {
-		return Netbox{}, errors.New("Could not parse netbox config")
+	if n.Url == "" || n.Token == "" || n.CacheDuration == 0 {
+		return Netbox{}, errors.New("Could not parse config")
 	}
 
-	clog.Info(fmt.Sprintf("Started netbox plugin version %s", VERSION))
-	return Netbox{Url: url, Token: token, CacheDuration: duration}, nil
+	log.Infof("Started plugin version %s", VERSION)
+	return n, nil
 
 }
