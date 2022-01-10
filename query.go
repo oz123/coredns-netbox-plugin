@@ -17,12 +17,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	logger "log"
 	"net/http"
 	"strings"
 	"time"
 
-	clog "github.com/coredns/coredns/plugin/pkg/log"
 	"github.com/imkira/go-ttlmap"
 )
 
@@ -43,26 +41,29 @@ type RecordsList struct {
 
 var localCache = ttlmap.New(nil)
 
-func query(url, token, dns_name string, duration time.Duration, family int) string {
+func query(url, token, dns_name string, duration time.Duration, family int) (string, error) {
 	item, err := localCache.Get(dns_name)
 	if err == nil {
-		clog.Debug(fmt.Sprintf("Found in local cache %s", dns_name))
-		logger.Printf("Found in local cache %s", dns_name)
-		return item.Value().(string)
+		log.Debugf("Found in local cache %s", dns_name)
+		return item.Value().(string), nil
 	} else {
 		records := RecordsList{}
 		client := &http.Client{}
 		var resp *http.Response
-		clog.Debug("Querying ", fmt.Sprintf("%s/?dns_name=%s", url, dns_name))
+		log.Debugf("Querying %s/?dns_name=%s", url, dns_name)
 		//logger.Printf("Querying %s ", fmt.Sprintf("%s/?dns_name=%s", url, dns_name))
 		req, err := http.NewRequest("GET", fmt.Sprintf("%s/?dns_name=%s", url, dns_name), nil)
+		if err != nil {
+			return "", err
+		}
+
 		req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
 
 		for i := 1; i <= 10; i++ {
 			resp, err = client.Do(req)
 
 			if err != nil {
-				clog.Fatalf("HTTP Error %v", err)
+				return "", err
 			}
 
 			if resp.StatusCode == http.StatusOK {
@@ -73,24 +74,23 @@ func query(url, token, dns_name string, duration time.Duration, family int) stri
 		}
 
 		if resp.StatusCode != http.StatusOK {
-			return ""
+			return "", fmt.Errorf("invalid HTTP resoponse code: %d", resp.StatusCode)
 		}
 
 		body, err := ioutil.ReadAll(resp.Body)
-		//logger.Printf("%s", body)
 		if err != nil {
-			clog.Fatalf("Error reading body %v", err)
+			return "", err
 		}
 
 		jsonAns := string(body)
 		err = json.Unmarshal([]byte(jsonAns), &records)
 		if err != nil {
-			clog.Fatalf("could not unmarshal response %v", err)
+			return "", err
 		}
 
 		if len(records.Records) == 0 {
-			clog.Info("Recored not found in", jsonAns)
-			return ""
+			log.Debugf("recored not found response: %s", jsonAns)
+			return "", nil
 		}
 
 		var ip_address string
@@ -113,6 +113,6 @@ func query(url, token, dns_name string, duration time.Duration, family int) stri
 			}
 
 		}
-		return ip_address
+		return ip_address, nil
 	}
 }

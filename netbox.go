@@ -60,6 +60,7 @@ func (n Netbox) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) 
 		ip_address string
 		record4    *dns.A
 		record6    *dns.AAAA
+		err        error
 	)
 
 	qname := state.Name()
@@ -67,22 +68,27 @@ func (n Netbox) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) 
 	switch state.QType() {
 
 	case dns.TypeA:
-		ip_address = query(n.Url, n.Token, strings.TrimRight(qname, "."), n.CacheDuration, 4)
+		ip_address, err = query(n.Url, n.Token, strings.TrimRight(qname, "."), n.CacheDuration, 4)
 		// no IP is found in netbox pass processing to the next plugin
 		record4 = a(state, ip_address, uint32(n.TTL))
 	case dns.TypeAAAA:
-		ip_address = query(n.Url, n.Token, strings.TrimRight(qname, "."), n.CacheDuration, 6)
+		ip_address, err = query(n.Url, n.Token, strings.TrimRight(qname, "."), n.CacheDuration, 6)
 		record6 = a6(state, ip_address, uint32(n.TTL))
 	}
 
 	if len(ip_address) == 0 {
-		// check if we fallthrough
- 		if n.Fall.Through(qname) {
-		 	return plugin.NextOrFailure(n.Name(), n.Next, ctx, w, r)
+		// always fallthrough if configured
+		if n.Fall.Through(qname) {
+			return plugin.NextOrFailure(n.Name(), n.Next, ctx, w, r)
 		}
 
-		// return failure here without fallthrough
-		return dnserror(dns.RcodeServerFailure, state, err)
+		if err != nil {
+			// return SERVFAIL here without fallthrough
+			return dnserror(dns.RcodeServerFailure, state, err)
+		}
+
+		// otherwise return NXDOMAIN
+		return dnserror(dns.RcodeNameError, state, nil)
 	}
 
 	writeDNSAnswer(record4, record6, w, r)
