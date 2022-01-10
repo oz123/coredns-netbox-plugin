@@ -41,6 +41,7 @@ type Netbox struct {
 	Token         string
 	CacheDuration time.Duration
 	Next          plugin.Handler
+	TTL           time.Duration
 }
 
 func (n Netbox) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) (int, error) {
@@ -54,7 +55,7 @@ func (n Netbox) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) 
 	// server handling the request.
 	requestCount.WithLabelValues(metrics.WithServer(ctx)).Inc()
 	var (
-		ip_address string = ""
+		ip_address string
 		record4    *dns.A
 		record6    *dns.AAAA
 	)
@@ -64,10 +65,10 @@ func (n Netbox) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) 
 	case dns.TypeA:
 		ip_address = query(n.Url, n.Token, strings.TrimRight(state.QName(), "."), n.CacheDuration, 4)
 		// no IP is found in netbox pass processing to the next plugin
-		record4 = a(state, ip_address, 3600)
+		record4 = a(state, ip_address, uint32(n.TTL))
 	case dns.TypeAAAA:
 		ip_address = query(n.Url, n.Token, strings.TrimRight(state.QName(), "."), n.CacheDuration, 6)
-		record6 = a6(state, ip_address, 3600)
+		record6 = a6(state, ip_address, uint32(n.TTL))
 	default:
 		// TODO: is dns.RcodeServerFailure the correct answer?
 		// maybe dns.RcodeNotImplemented is more appropriate?

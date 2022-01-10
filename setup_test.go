@@ -24,23 +24,50 @@ import (
 )
 
 // TestSetup tests the various things that should be parsed by setup.
-// Make sure you also test for parse errors.
 func TestSetup(t *testing.T) {
-	c := caddy.NewTestController("dns", `netbox { url example.org\n token foobar\n localCacheDuration 10s }`)
-	if err := setup(c); err != nil {
-		t.Fatalf("Expected no errors, but got: %v", err)
+	// tests to run
+	tests := []struct {
+		msg     string
+		input   string
+		wantErr bool
+	}{
+		{
+			"minimal valid config",
+			"netbox {\nurl example.org\ntoken foobar\nlocalCacheDuration 10s\n}\n",
+			false,
+		},
+		{
+			"empty config",
+			"netbox {}\n",
+			true,
+		},
+		{
+			"invalid localCacheDuration",
+			"netbox {\nurl example.org\ntoken foobar\nlocalCacheDuration Wrong\n}\n",
+			true,
+		},
+		{
+			"config with ttl",
+			"netbox {\nurl example.org\ntoken foobar\nlocalCacheDuration 10s\nttl 3600s\n}\n",
+			false,
+		},
+		{
+			"config with invalid ttl",
+			"netbox {\nurl example.org\ntoken foobar\nlocalCacheDuration 10s\nttl INVALID\n}\n",
+			true,
+		},
 	}
 
-	c = caddy.NewTestController("dns", `netbox {}`)
-	if err := setup(c); err == nil {
-		t.Fatalf("Expected errors, but got: %v", err)
+	// run tests
+	for _, tt := range tests {
+		c := caddy.NewTestController("dns", tt.input)
+		err := setup(c)
+		if tt.wantErr {
+			assert.Error(t, err, tt.msg)
+		} else {
+			assert.Nil(t, err, tt.msg)
+		}
 	}
-}
-
-func TestSetupWithWrongDuration(t *testing.T) {
-	c := caddy.NewTestController("dns", `netbox { url example.org\n token foobar\n localCacheDuration Wrong }`)
-	_, err := newNetBox(c)
-	assert.Error(t, err, "Expected error")
 }
 
 func TestSetupWithDuration(t *testing.T) {

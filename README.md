@@ -43,14 +43,24 @@ Then add it to Corefile:
 ```
 . {
    netbox {
-      token <YOU-NETBOX-API-TOKEN>
-      url <https://netbox.example.org>
-      localCacheDuration <The duration to keep each entry locally before querying netbox again. Use go `time.Duration` notation>
+      token TOKEN
+      url URL
+      localCacheDuration DURATION
+      ttl DURATION
    }
 }
 ```
 
-The config parameters are mandatory.
+* `token` **TOKEN** sets the API token used to authenticate against NetBox
+  (**REQUIRED**).
+* `url` **URL** defines the URL *netbox* should query. This URL must be
+  specified in full as `SCHEME://HOST/api/ipam/ip-addresses` (**REQUIRED**).
+* `localCacheDuration` **DURATION** sets the time to cache responses from
+  NetBox.
+* `ttl` **DURATION** defines the TTL of records returned from *netbox*. Default
+  is 1h (3600s).
+
+The config parameters `token`, `url` and `localCacheDuration` are required.
 
 ## Changelog
 
