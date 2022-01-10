@@ -34,7 +34,7 @@ func init() { plugin.Register("netbox", setup) }
 // for parsing any extra options the example plugin may have. The first token this function sees is "example".
 func setup(c *caddy.Controller) error {
 
-	netboxPlugin, err := newNetBox(c)
+	n, err := newNetBox(c)
 	if err != nil {
 		return plugin.Error("netbox", err)
 	}
@@ -57,7 +57,8 @@ func setup(c *caddy.Controller) error {
 
 	// Add the Plugin to CoreDNS, so Servers can use it in their plugin chain.
 	dnsserver.GetConfig(c).AddPlugin(func(next plugin.Handler) plugin.Handler {
-		return netboxPlugin
+		n.Next = next
+		return n
 	})
 
 	// All OK, return a nil error.
@@ -73,6 +74,9 @@ func newNetBox(c *caddy.Controller) (Netbox, error) {
 		if c.NextBlock() {
 			for {
 				switch c.Val() {
+				case "fallthrough":
+					n.Fall.SetZonesFromArgs(c.RemainingArgs())
+
 				case "url":
 					if !c.NextArg() {
 						return Netbox{}, c.ArgErr()

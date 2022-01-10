@@ -24,6 +24,7 @@ import (
 
 	"github.com/coredns/coredns/plugin"
 	"github.com/coredns/coredns/plugin/metrics"
+	"github.com/coredns/coredns/plugin/pkg/fall"
 	clog "github.com/coredns/coredns/plugin/pkg/log"
 	"github.com/coredns/coredns/request"
 	"github.com/miekg/dns"
@@ -42,6 +43,7 @@ type Netbox struct {
 	CacheDuration time.Duration
 	Next          plugin.Handler
 	TTL           time.Duration
+	Fall          fall.F
 }
 
 func (n Netbox) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) (int, error) {

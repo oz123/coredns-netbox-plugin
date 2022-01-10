@@ -29,25 +29,33 @@ curl https://netbox.example.org/api/ipam/ip-addresses/?dns_name=example-vm-host
 }
 ```
 
-## Usage
+## Enabling
 
-To activate the plugin you need to compile CoreDNS with the plugin added
+To activate the *netbox* plugin you need to compile CoreDNS with the plugin added
 to `plugin.cfg`
 
 ```
 netbox:github.com/oz123/coredns-netbox-plugin
 ```
 
-Then add it to Corefile:
+### Ordering in plugin.cfg
+
+The ordering of plugins in the `plugin.cfg` file is important to ensure you
+get the behaviour you expect when using multiple plugins in a config section.
+
+For example, in order to utilise the native cache plugin, ensure that you add
+the *netbox* plugin _after_ `cache:cache` but _before_ any plugins you want to
+be able to fall-through to (eg `file:file` or `forward:forward`).
+
+## Syntax
 
 ```
-. {
-   netbox {
-      token TOKEN
-      url URL
-      localCacheDuration DURATION
-      ttl DURATION
-   }
+netbox {
+  token TOKEN
+  url URL
+  localCacheDuration DURATION
+  ttl DURATION
+  fallthrough [ZONES...]
 }
 ```
 
@@ -59,8 +67,57 @@ Then add it to Corefile:
   NetBox.
 * `ttl` **DURATION** defines the TTL of records returned from *netbox*. Default
   is 1h (3600s).
+* `fallthrough` If a zone matches but no record can be generated, pass request
+to the next plugin. If **[ZONES…]** is omitted, then fallthrough happens for
+all zones for which the plugin is authoritative. If specific zones are listed
+then only queries for those zones will be subject to fallthrough.
 
 The config parameters `token`, `url` and `localCacheDuration` are required.
+
+## Examples
+
+Send all requests to NetBox:
+
+```
+. {
+    netbox {
+        token SuperSecretNetBoxAPIToken
+        url https://netbox.example.org/api/ipam/ip-addresses
+        localCacheDuration 300s
+    }
+}
+```
+
+Send requests within `example.org` to NetBox and fall-through to the `file`
+plugin in order to respond to unsupported record types (ie `SOA`, `NS` etc):
+
+```
+example.org {
+    netbox {
+        token SuperSecretNetBoxAPIToken
+        url https://netbox.example.org/api/ipam/ip-addresses
+        localCacheDuration 300s
+        fallthrough
+    }
+    file db.example.org
+}
+
+```
+
+Handle all requests with *netbox* and fall-through to the `forward`
+plugin for requests within `example.org`:
+
+```
+. {
+    netbox {
+        token SuperSecretNetBoxAPIToken
+        url https://netbox.example.org/api/ipam/ip-addresses
+        localCacheDuration 300s
+        fallthrough example.org
+    }
+    forward 1.1.1.1 1.0.0.1
+}
+```
 
 ## Changelog
 
