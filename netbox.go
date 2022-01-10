@@ -62,19 +62,17 @@ func (n Netbox) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) 
 		record6    *dns.AAAA
 	)
 
+	qname := state.Name()
+
 	switch state.QType() {
 
 	case dns.TypeA:
-		ip_address = query(n.Url, n.Token, strings.TrimRight(state.QName(), "."), n.CacheDuration, 4)
+		ip_address = query(n.Url, n.Token, strings.TrimRight(qname, "."), n.CacheDuration, 4)
 		// no IP is found in netbox pass processing to the next plugin
 		record4 = a(state, ip_address, uint32(n.TTL))
 	case dns.TypeAAAA:
-		ip_address = query(n.Url, n.Token, strings.TrimRight(state.QName(), "."), n.CacheDuration, 6)
+		ip_address = query(n.Url, n.Token, strings.TrimRight(qname, "."), n.CacheDuration, 6)
 		record6 = a6(state, ip_address, uint32(n.TTL))
-	default:
-		// TODO: is dns.RcodeServerFailure the correct answer?
-		// maybe dns.RcodeNotImplemented is more appropriate?
-		return dns.RcodeServerFailure, nil
 	}
 
 	if len(ip_address) == 0 {
