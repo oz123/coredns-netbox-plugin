@@ -78,7 +78,13 @@ func (n Netbox) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) 
 	}
 
 	if len(ip_address) == 0 {
-		return plugin.NextOrFailure(n.Name(), n.Next, ctx, w, r)
+		// check if we fallthrough
+ 		if n.Fall.Through(qname) {
+		 	return plugin.NextOrFailure(n.Name(), n.Next, ctx, w, r)
+		}
+
+		// return failure here without fallthrough
+		return dnserror(dns.RcodeServerFailure, state, err)
 	}
 
 	writeDNSAnswer(record4, record6, w, r)
@@ -120,4 +126,17 @@ func a6(state request.Request, ip_addr string, ttl uint32) *dns.AAAA {
 	rec.Hdr = dns.RR_Header{Name: state.QName(), Rrtype: dns.TypeAAAA, Class: dns.ClassINET, Ttl: ttl}
 	rec.AAAA = net.ParseIP(ip_addr)
 	return rec
+}
+
+// dnserror writes a DNS error response back to the client. Based on plugin.BackendError
+func dnserror(rcode int, state request.Request, err error) (int, error) {
+	m := new(dns.Msg)
+	m.SetRcode(state.Req, rcode)
+	m.Authoritative = true
+
+	// send response
+	state.W.WriteMsg(m)
+
+	// return success as the rcode to signal we have written to the client.
+	return dns.RcodeSuccess, err
 }
