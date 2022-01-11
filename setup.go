@@ -77,8 +77,6 @@ func newNetbox() *Netbox {
 }
 
 func parseNetbox(c *caddy.Controller) (*Netbox, error) {
-	var client *http.Client
-
 	n := newNetbox()
 	i := 0
 	for c.Next() {
@@ -123,7 +121,7 @@ func parseNetbox(c *caddy.Controller) (*Netbox, error) {
 				}
 
 				// set timeout for http client
-				client.Timeout = duration
+				n.client.Timeout = duration
 
 			case "token":
 				if !c.NextArg() {
@@ -151,9 +149,6 @@ func parseNetbox(c *caddy.Controller) (*Netbox, error) {
 	if n.Url == "" || n.Token == "" {
 		return n, c.Err("Invalid config")
 	}
-
-	// set http client for plugin
-	n.client = client
 
 	log.Infof("Version %s", VERSION)
 
