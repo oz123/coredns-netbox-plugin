@@ -15,6 +15,7 @@
 package netbox
 
 import (
+	"net/http"
 	"net/url"
 	"time"
 
@@ -67,14 +68,17 @@ func setup(c *caddy.Controller) error {
 
 func newNetbox() *Netbox {
 	return &Netbox{
-		CacheDuration: 0,
-		Timeout:       10 * time.Second,
-		TTL:           3600,
-		Zones:         []string{"."},
+		TTL:   3600,
+		Zones: []string{"."},
+		client: &http.Client{
+			Timeout: 10 * time.Second,
+		},
 	}
 }
 
 func parseNetbox(c *caddy.Controller) (*Netbox, error) {
+	var client *http.Client
+
 	n := newNetbox()
 	i := 0
 	for c.Next() {
@@ -117,7 +121,9 @@ func parseNetbox(c *caddy.Controller) (*Netbox, error) {
 				if err != nil {
 					return n, c.Errf("could not parse 'timeout': %s", err)
 				}
-				n.Timeout = duration
+
+				// set timeout for http client
+				client.Timeout = duration
 
 			case "token":
 				if !c.NextArg() {
@@ -135,17 +141,6 @@ func parseNetbox(c *caddy.Controller) (*Netbox, error) {
 				}
 				n.TTL = uint32(duration)
 
-			case "localCacheDuration":
-				log.Warning("Consider using the cache plugin instead of using localCacheDuration")
-				if !c.NextArg() {
-					return n, c.ArgErr()
-				}
-				duration, err := time.ParseDuration(c.Val())
-				if err != nil {
-					return n, c.Errf("could not parse 'localCacheDuration': %s", err)
-				}
-				n.CacheDuration = duration
-
 			default:
 				return n, c.Errf("unknown property '%s'", c.Val())
 			}
@@ -156,6 +151,9 @@ func parseNetbox(c *caddy.Controller) (*Netbox, error) {
 	if n.Url == "" || n.Token == "" {
 		return n, c.Err("Invalid config")
 	}
+
+	// set http client for plugin
+	n.client = client
 
 	log.Infof("Version %s", VERSION)
 

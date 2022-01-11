@@ -19,9 +19,6 @@ import (
 	"net"
 	"net/http"
 	"strings"
-	"time"
-
-	"github.com/imkira/go-ttlmap"
 )
 
 type Record struct {
@@ -39,13 +36,7 @@ type RecordsList struct {
 	Records []Record `json:"results"`
 }
 
-var localCache = ttlmap.New(nil)
-
-func get(url, token string, timeout time.Duration) (*http.Response, error) {
-	client := &http.Client{
-		Timeout: timeout,
-	}
-
+func get(client *http.Client, url, token string) (*http.Response, error) {
 	// set up HTTP request
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -68,14 +59,6 @@ func (n *Netbox) query(host string, family int) ([]net.IP, error) {
 
 	addresses := make([]net.IP, 0)
 
-	// attempt to retrieve from cache if not disabled
-	if n.CacheDuration != 0 {
-		if item, err := localCache.Get(cachekey(dns_name, family)); err == nil {
-			log.Debugf("Found in local cache %s", dns_name)
-			return item.Value().([]net.IP), nil
-		}
-	}
-
 	qtype := "A"
 	if family == familyIP6 {
 		qtype = "AAAA"
@@ -83,7 +66,7 @@ func (n *Netbox) query(host string, family int) ([]net.IP, error) {
 	log.Debugf("Querying %s for %s", requrl, qtype)
 
 	// do http request against NetBox instance
-	resp, err := get(requrl, n.Token, n.Timeout)
+	resp, err := get(n.client, requrl, n.Token)
 	if err != nil {
 		return addresses, fmt.Errorf("Problem performing request: %w", err)
 	}
@@ -117,18 +100,5 @@ func (n *Netbox) query(host string, family int) ([]net.IP, error) {
 
 	log.Debugf("Got %d %s responses from %s", len(addresses), qtype, requrl)
 
-	// cache if duration is non-zero and there were matching addresses
-	if n.CacheDuration != 0 && len(addresses) > 0 {
-		expiration := ttlmap.WithTTL(n.CacheDuration)
-		if err := localCache.Set(cachekey(dns_name, family), ttlmap.NewItem(addresses, expiration), nil); err != nil {
-			log.Warningf("Error adding %s to local cache: %s", dns_name, err)
-		}
-	}
-
 	return addresses, nil
-}
-
-// cachekey ensures we have a consistent key to cache items
-func cachekey(name string, family int) string {
-	return fmt.Sprintf("%s_%d", name, family)
 }

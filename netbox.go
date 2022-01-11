@@ -16,10 +16,8 @@ package netbox
 
 import (
 	"context"
-	"io"
 	"net"
-	"os"
-	"time"
+	"net/http"
 
 	"github.com/coredns/coredns/plugin"
 	"github.com/coredns/coredns/plugin/metrics"
@@ -33,18 +31,14 @@ import (
 // friends to log.
 var log = clog.NewWithPlugin("netbox")
 
-// Make out a reference to os.Stdout so we can easily overwrite it for testing.
-var out io.Writer = os.Stdout
-
 type Netbox struct {
-	Url           string
-	Token         string
-	CacheDuration time.Duration
-	Timeout       time.Duration
-	TTL           uint32
-	Next          plugin.Handler
-	Fall          fall.F
-	Zones         []string
+	Url    string
+	Token  string
+	TTL    uint32
+	Next   plugin.Handler
+	Fall   fall.F
+	Zones  []string
+	client *http.Client
 }
 
 // constants to match IP address family used by NetBox
