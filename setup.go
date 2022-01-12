@@ -22,6 +22,7 @@ import (
 	"github.com/coredns/coredns/core/dnsserver"
 	"github.com/coredns/coredns/plugin"
 	"github.com/coredns/coredns/plugin/metrics"
+	ctls "github.com/coredns/coredns/plugin/pkg/tls"
 
 	"github.com/coredns/caddy"
 )
@@ -70,7 +71,7 @@ func newNetbox() *Netbox {
 	return &Netbox{
 		TTL:   3600,
 		Zones: []string{"."},
-		client: &http.Client{
+		Client: &http.Client{
 			Timeout: 10 * time.Second,
 		},
 	}
@@ -121,7 +122,7 @@ func parseNetbox(c *caddy.Controller) (*Netbox, error) {
 				}
 
 				// set timeout for http client
-				n.client.Timeout = duration
+				n.Client.Timeout = duration
 
 			case "token":
 				if !c.NextArg() {
@@ -129,6 +130,20 @@ func parseNetbox(c *caddy.Controller) (*Netbox, error) {
 				}
 				n.Token = c.Val()
 
+			case "tls":
+				args := c.RemainingArgs()
+				tlsConfig, err := ctls.NewTLSConfigFromArgs(args...)
+				if err != nil {
+					return n, err
+				}
+
+				// set up *http.Transport
+				transport := &http.Transport{
+					TLSClientConfig: tlsConfig,
+				}
+
+				// add to client
+				n.Client.Transport = transport
 			case "ttl":
 				if !c.NextArg() {
 					return n, c.ArgErr()

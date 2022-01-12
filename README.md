@@ -55,6 +55,7 @@ netbox [ZONES...] {
     url URL
     localCacheDuration DURATION
     timeout DURATION
+    tls CERT KEY CACERT 
     ttl DURATION
     fallthrough [ZONES...]
 }
@@ -70,6 +71,17 @@ netbox [ZONES...] {
   the built-in cache plugin instead.
 * `timeout` **DURATION** sets the HTTP timeout for requests to NetBox. Default
   is 10s.
+* `tls` followed by:
+    * no arguments, if the server certificate is signed by a system-installed
+      CA and no client cert is needed (this is the default if HTTPS is used).
+    * a single argument that is the CA PEM file, if the server cert is not
+      signed by a system CA and no client cert is needed.
+    * two arguments - path to cert PEM file, the path to private key PEM file -
+      if the server certificate is signed by a system-installed CA and a client
+      certificate is needed.
+    * three arguments - path to cert PEM file, path to client private key PEM
+      file, path to CA PEM file - if the server certificate is not signed by a
+      system-installed CA and client certificate is needed.
 * `ttl` **DURATION** defines the TTL of records returned from *netbox*. Default
   is 1h (3600s).
 * `fallthrough` If a zone matches but no record can be generated, pass request

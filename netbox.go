@@ -38,7 +38,7 @@ type Netbox struct {
 	Next   plugin.Handler
 	Fall   fall.F
 	Zones  []string
-	client *http.Client
+	Client *http.Client
 }
 
 // constants to match IP address family used by NetBox
@@ -108,7 +108,7 @@ func (n Netbox) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) 
 	m.Authoritative = true
 	m.Answer = answers
 
-	w.WriteMsg(m)
+	_ = w.WriteMsg(m)
 
 	// signal response sent back to client
 	return dns.RcodeSuccess, nil

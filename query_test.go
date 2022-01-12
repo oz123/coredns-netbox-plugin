@@ -46,7 +46,7 @@ var (
 	n = Netbox{
 		Url:   "https://example.org/api/ipam/ip-addresses",
 		Token: "mytoken",
-		client: &http.Client{
+		Client: &http.Client{
 			Timeout: 10 * time.Second,
 		},
 	}

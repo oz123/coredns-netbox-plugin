@@ -37,6 +37,11 @@ type RecordsList struct {
 }
 
 func get(client *http.Client, url, token string) (*http.Response, error) {
+	// handle if provided client was not set up
+	if client == nil {
+		return nil, fmt.Errorf("provided *http.Client was invalid")
+	}
+
 	// set up HTTP request
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -66,7 +71,7 @@ func (n *Netbox) query(host string, family int) ([]net.IP, error) {
 	log.Debugf("Querying %s for %s", requrl, qtype)
 
 	// do http request against NetBox instance
-	resp, err := get(n.client, requrl, n.Token)
+	resp, err := get(n.Client, requrl, n.Token)
 	if err != nil {
 		return addresses, fmt.Errorf("Problem performing request: %w", err)
 	}
