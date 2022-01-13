@@ -42,7 +42,7 @@ func TestQuery(t *testing.T) {
 		200).BodyString(anotherHostWithIPv4)
 
 	want := "10.0.0.2"
-	got := query("https://example.org/api/ipam/ip-addresses", "mytoken", "my_host", time.Millisecond*100, 4)
+	got, _ := query("https://example.org/api/ipam/ip-addresses", "mytoken", "my_host", time.Millisecond*100, 4)
 	if got != want {
 		t.Fatalf("Expected %s but got %s", want, got)
 	}
@@ -57,7 +57,7 @@ func TestQueryIPv6(t *testing.T) {
 		200).BodyString(hostWithIPv6)
 
 	want := "fe80::250:56ff:fe3d:83af"
-	got := query("https://example.org/api/ipam/ip-addresses", "mytoken", "mail.foo.com", time.Millisecond*100, 6)
+	got, _ := query("https://example.org/api/ipam/ip-addresses", "mytoken", "mail.foo.com", time.Millisecond*100, 6)
 	if got != want {
 		t.Fatalf("Expected %s but got %s", want, got)
 	}
@@ -70,7 +70,7 @@ func TestQueryMultipleAddresses(t *testing.T) {
 		map[string]string{"dns_name": "mail.foo.com"}).Reply(
 		200).BodyString(hostWithMultipleAddresses)
 	want := "fe80::250:56ff:fe3d:83af"
-	got := query("https://example.org/api/ipam/ip-addresses", "mytoken", "mail.foo.com", time.Millisecond*100, 6)
+	got, _ := query("https://example.org/api/ipam/ip-addresses", "mytoken", "mail.foo.com", time.Millisecond*100, 6)
 	if got != want {
 		t.Fatalf("Expected %s but got %s", want, got)
 	}
@@ -84,7 +84,7 @@ func TestNoSuchHost(t *testing.T) {
 		200).BodyString(`{"count":0,"next":null,"previous":null,"results":[]}`)
 
 	want := ""
-	got := query("https://example.org/api/ipam/ip-addresses", "mytoken", "NoSuchHost", time.Millisecond*100, 4)
+	got, _ := query("https://example.org/api/ipam/ip-addresses", "mytoken", "NoSuchHost", time.Millisecond*100, 4)
 	if got != want {
 		t.Fatalf("Expected empty string but got %s", got)
 	}
@@ -99,7 +99,7 @@ func TestLocalCache(t *testing.T) {
 
 	ip_address := ""
 
-	got := query("https://example.org/api/ipam/ip-addresses", "mytoken", "my_host", time.Millisecond*100, 4)
+	got, _ := query("https://example.org/api/ipam/ip-addresses", "mytoken", "my_host", time.Millisecond*100, 4)
 
 	item, err := localCache.Get("my_host")
 	if err == nil {
@@ -116,7 +116,7 @@ func TestLocalCacheExpiration(t *testing.T) {
 		map[string]string{"dns_name": "my_host"}).Reply(
 		200).BodyString(anotherHostWithIPv4)
 
-	query("https://example.org/api/ipam/ip-addresses", "mytoken", "my_host", time.Millisecond*100, 4)
+	_, _ = query("https://example.org/api/ipam/ip-addresses", "mytoken", "my_host", time.Millisecond*100, 4)
 	<-time.After(101 * time.Millisecond)
 	item, err := localCache.Get("my_host")
 	if err != nil {

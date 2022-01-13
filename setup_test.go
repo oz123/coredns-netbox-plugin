@@ -56,6 +56,21 @@ func TestSetup(t *testing.T) {
 			"netbox {\nurl example.org\ntoken foobar\nlocalCacheDuration 10s\nttl INVALID\n}\n",
 			true,
 		},
+		{
+			"config with fallthrough (all)",
+			"netbox {\nurl example.org\ntoken foobar\nlocalCacheDuration 10s\nfallthrough\n}\n",
+			false,
+		},
+		{
+			"config with fallthrough (one domain)",
+			"netbox {\nurl example.org\ntoken foobar\nlocalCacheDuration 10s\nfallthrough example.org\n}\n",
+			false,
+		},
+		{
+			"config with fallthrough (multiple domains)",
+			"netbox {\nurl example.org\ntoken foobar\nlocalCacheDuration 10s\nfallthrough example.org example.net\n}\n",
+			false,
+		},
 	}
 
 	// run tests
