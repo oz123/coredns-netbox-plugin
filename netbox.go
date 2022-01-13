@@ -16,14 +16,13 @@ package netbox
 
 import (
 	"context"
-	"io"
 	"net"
-	"os"
 	"strings"
 	"time"
 
 	"github.com/coredns/coredns/plugin"
 	"github.com/coredns/coredns/plugin/metrics"
+	"github.com/coredns/coredns/plugin/pkg/fall"
 	clog "github.com/coredns/coredns/plugin/pkg/log"
 	"github.com/coredns/coredns/request"
 	"github.com/miekg/dns"
@@ -33,15 +32,13 @@ import (
 // friends to log.
 var log = clog.NewWithPlugin("netbox")
 
-// Make out a reference to os.Stdout so we can easily overwrite it for testing.
-var out io.Writer = os.Stdout
-
 type Netbox struct {
 	Url           string
 	Token         string
 	CacheDuration time.Duration
 	Next          plugin.Handler
 	TTL           time.Duration
+	Fall          fall.F
 }
 
 func (n Netbox) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) (int, error) {
@@ -58,25 +55,35 @@ func (n Netbox) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) 
 		ip_address string
 		record4    *dns.A
 		record6    *dns.AAAA
+		err        error
 	)
+
+	qname := state.Name()
 
 	switch state.QType() {
 
 	case dns.TypeA:
-		ip_address = query(n.Url, n.Token, strings.TrimRight(state.QName(), "."), n.CacheDuration, 4)
+		ip_address, err = query(n.Url, n.Token, strings.TrimRight(qname, "."), n.CacheDuration, 4)
 		// no IP is found in netbox pass processing to the next plugin
 		record4 = a(state, ip_address, uint32(n.TTL))
 	case dns.TypeAAAA:
-		ip_address = query(n.Url, n.Token, strings.TrimRight(state.QName(), "."), n.CacheDuration, 6)
+		ip_address, err = query(n.Url, n.Token, strings.TrimRight(qname, "."), n.CacheDuration, 6)
 		record6 = a6(state, ip_address, uint32(n.TTL))
-	default:
-		// TODO: is dns.RcodeServerFailure the correct answer?
-		// maybe dns.RcodeNotImplemented is more appropriate?
-		return dns.RcodeServerFailure, nil
 	}
 
 	if len(ip_address) == 0 {
-		return plugin.NextOrFailure(n.Name(), n.Next, ctx, w, r)
+		// always fallthrough if configured
+		if n.Fall.Through(qname) {
+			return plugin.NextOrFailure(n.Name(), n.Next, ctx, w, r)
+		}
+
+		if err != nil {
+			// return SERVFAIL here without fallthrough
+			return dnserror(dns.RcodeServerFailure, state, err)
+		}
+
+		// otherwise return NXDOMAIN
+		return dnserror(dns.RcodeNameError, state, nil)
 	}
 
 	writeDNSAnswer(record4, record6, w, r)
@@ -103,7 +110,7 @@ func writeDNSAnswer(record4 *dns.A, record6 *dns.AAAA, w dns.ResponseWriter, r *
 	m := new(dns.Msg)
 	m.Answer = answers
 	m.SetReply(r)
-	w.WriteMsg(m)
+	_ = w.WriteMsg(m)
 }
 
 func a(state request.Request, ip_addr string, ttl uint32) *dns.A {
@@ -118,4 +125,17 @@ func a6(state request.Request, ip_addr string, ttl uint32) *dns.AAAA {
 	rec.Hdr = dns.RR_Header{Name: state.QName(), Rrtype: dns.TypeAAAA, Class: dns.ClassINET, Ttl: ttl}
 	rec.AAAA = net.ParseIP(ip_addr)
 	return rec
+}
+
+// dnserror writes a DNS error response back to the client. Based on plugin.BackendError
+func dnserror(rcode int, state request.Request, err error) (int, error) {
+	m := new(dns.Msg)
+	m.SetRcode(state.Req, rcode)
+	m.Authoritative = true
+
+	// send response
+	_ = state.W.WriteMsg(m)
+
+	// return success as the rcode to signal we have written to the client.
+	return dns.RcodeSuccess, err
 }
