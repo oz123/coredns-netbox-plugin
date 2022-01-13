@@ -99,7 +99,7 @@ func query(url, token, dns_name string, duration time.Duration, family int) (str
 			for _, r := range records.Records {
 				if r.Family.Version == 4 {
 					ip_address = strings.Split(r.Address, "/")[0]
-					localCache.Set(dns_name, ttlmap.NewItem(ip_address, ttlmap.WithTTL(duration)), nil)
+					_ = localCache.Set(dns_name, ttlmap.NewItem(ip_address, ttlmap.WithTTL(duration)), nil)
 					break
 				}
 			}
@@ -107,7 +107,7 @@ func query(url, token, dns_name string, duration time.Duration, family int) (str
 			for _, r := range records.Records {
 				if r.Family.Version == 6 {
 					ip_address = strings.Split(r.Address, "/")[0]
-					localCache.Set(dns_name, ttlmap.NewItem(ip_address, ttlmap.WithTTL(duration)), nil)
+					_ = localCache.Set(dns_name, ttlmap.NewItem(ip_address, ttlmap.WithTTL(duration)), nil)
 					break
 				}
 			}

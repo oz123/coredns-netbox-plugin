@@ -116,7 +116,7 @@ func TestLocalCacheExpiration(t *testing.T) {
 		map[string]string{"dns_name": "my_host"}).Reply(
 		200).BodyString(anotherHostWithIPv4)
 
-	query("https://example.org/api/ipam/ip-addresses", "mytoken", "my_host", time.Millisecond*100, 4)
+	_, _ = query("https://example.org/api/ipam/ip-addresses", "mytoken", "my_host", time.Millisecond*100, 4)
 	<-time.After(101 * time.Millisecond)
 	item, err := localCache.Get("my_host")
 	if err != nil {

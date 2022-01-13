@@ -16,9 +16,7 @@ package netbox
 
 import (
 	"context"
-	"io"
 	"net"
-	"os"
 	"strings"
 	"time"
 
@@ -33,9 +31,6 @@ import (
 // Define log to be a logger with the plugin name in it. This way we can just use log.Info and
 // friends to log.
 var log = clog.NewWithPlugin("netbox")
-
-// Make out a reference to os.Stdout so we can easily overwrite it for testing.
-var out io.Writer = os.Stdout
 
 type Netbox struct {
 	Url           string
@@ -115,7 +110,7 @@ func writeDNSAnswer(record4 *dns.A, record6 *dns.AAAA, w dns.ResponseWriter, r *
 	m := new(dns.Msg)
 	m.Answer = answers
 	m.SetReply(r)
-	w.WriteMsg(m)
+	_ = w.WriteMsg(m)
 }
 
 func a(state request.Request, ip_addr string, ttl uint32) *dns.A {
@@ -139,7 +134,7 @@ func dnserror(rcode int, state request.Request, err error) (int, error) {
 	m.Authoritative = true
 
 	// send response
-	state.W.WriteMsg(m)
+	_ = state.W.WriteMsg(m)
 
 	// return success as the rcode to signal we have written to the client.
 	return dns.RcodeSuccess, err
