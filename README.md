@@ -41,7 +41,8 @@ netbox:github.com/oz123/coredns-netbox-plugin
 ### Ordering in plugin.cfg
 
 The ordering of plugins in the `plugin.cfg` file is important to ensure you
-get the behaviour you expect when using multiple plugins in a config section.
+get the behaviour you expect when using multiple plugins in a
+[Corefile server block][2].
 
 For example, in order to utilise the native cache plugin, ensure that you add
 the *netbox* plugin _after_ `cache:cache` but _before_ any plugins you want to
@@ -155,3 +156,4 @@ This plugin is heavily based on the code of the redis-plugin for CoreDNS.
 
 
 [1]: https://netbox.readthedocs.io/en/stable/
+[2]: https://coredns.io/manual/toc/#server-blocks
