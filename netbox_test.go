@@ -33,7 +33,10 @@ func TestNetbox(t *testing.T) {
 	gock.New("https://example.org/api/ipam/ip-addresses/").MatchParams(
 		map[string]string{"dns_name": "my_host"}).Reply(
 		200).BodyString(hostWithIPv4)
-	nb := Netbox{Url: "https://example.org/api/ipam/ip-addresses", Token: "s3kr3tt0ken", CacheDuration: time.Second * 10}
+	nb := newNetbox()
+	nb.Url = "https://example.org/api/ipam/ip-addresses"
+	nb.Token = "s3kr3tt0ken"
+	nb.CacheDuration = time.Second * 10
 
 	if nb.Name() != "netbox" {
 		t.Errorf("expected plugin name: %s, got %s", "netbox", nb.Name())
