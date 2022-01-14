@@ -1,14 +1,32 @@
 . {
-   debug
-   netbox {
-     token  0123456789abcdef0123456789abcdef01234567
-     url    http://localhost:8000/api/ipam/ip-addresses
-     localCacheDuration 1h
-   }
+  debug
+  netbox {
+    token 0123456789abcdef0123456789abcdef01234567
+    url http://localhost:8000/api/ipam/ip-addresses
+    localCacheDuration 1h
+  }
 
-   hosts {
-        10.0.0.1 example.org
-	10.0.0.3 definitely-not-in-netbox.org
-        fallthrough
-   }
+  hosts {
+    10.0.0.1 example.org
+	  10.0.0.3 definitely-not-in-netbox.org
+    fallthrough
+  }
 }
+
+# The following examples specify what zone(s) should be handled by netbox:
+#
+# . {
+#   netbox example.org {
+#     token 0123456789abcdef0123456789abcdef01234567
+#     url http://localhost:8000/api/ipam/ip-addresses
+#     localCacheDuration 1h
+#   } 
+# }
+#
+# . {
+#   netbox example.org example.net {
+#     token 0123456789abcdef0123456789abcdef01234567
+#     url http://localhost:8000/api/ipam/ip-addresses
+#     localCacheDuration 1h
+#   } 
+# }
