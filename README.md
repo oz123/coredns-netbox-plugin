@@ -117,7 +117,7 @@ plugin for requests within `example.org`:
         localCacheDuration 300s
         fallthrough example.org
     }
-    forward 1.1.1.1 1.0.0.1
+    forward . 1.1.1.1 1.0.0.1
 }
 ```
 

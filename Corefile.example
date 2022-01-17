@@ -1,3 +1,16 @@
+# The following has all zones handled by both netbox and hosts with
+# hosts set to "fallthrough" to the next plugin if it is unable to
+# handle the request.
+#
+# This example highlights the importance of ordering of plugins in
+# plugins.cfg during the compilation of CoreDNS.
+#
+# In the case where netbox was added before hosts requests will be handled
+# by netbox exclusively and never by hosts, as netbox not set to fallthrough.
+#
+# Alternatively if netbox was added after hosts then requests that are not
+# answered by hosts will fallthrough to netbox.
+#
 . {
   debug
   netbox {
@@ -8,12 +21,12 @@
 
   hosts {
     10.0.0.1 example.org
-	  10.0.0.3 definitely-not-in-netbox.org
+    10.0.0.3 definitely-not-in-netbox.org
     fallthrough
   }
 }
 
-# The following examples specify what zone(s) should be handled by netbox:
+# The following example has requests in example.org handled by netbox:
 #
 # . {
 #   netbox example.org {
@@ -23,10 +36,31 @@
 #   } 
 # }
 #
+#
+# The following has requests in example.org and example.net handled by netbox:
+#
 # . {
 #   netbox example.org example.net {
 #     token 0123456789abcdef0123456789abcdef01234567
 #     url http://localhost:8000/api/ipam/ip-addresses
 #     localCacheDuration 1h
 #   } 
+# }
+#
+# The following has all requests handled by netbox with fallthrough to forward.
+#
+# In addition all record from netbox will be set with a TTL of 1800 seconds.
+#
+# NOTE: Thix example assumes that netbox was added to plugin.cfg before
+# forward.
+#
+# . {
+#   netbox {
+#     token 0123456789abcdef0123456789abcdef01234567
+#     url http://localhost:8000/api/ipam/ip-addresses
+#     localCacheDuration 1h
+#     ttl 1800s
+#     fallthrough
+#   }
+#   forward . 1.1.1.1 1.0.0.1
 # }
