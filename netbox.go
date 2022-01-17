@@ -39,6 +39,7 @@ type Netbox struct {
 	Next          plugin.Handler
 	TTL           time.Duration
 	Fall          fall.F
+	Zones         []string
 }
 
 func (n Netbox) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) (int, error) {
@@ -47,6 +48,12 @@ func (n Netbox) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) 
 	// https://en.wikipedia.org/wiki/List_of_DNS_record_types
 	// if this is not A or AAAA return early
 	state := request.Request{W: w, Req: r}
+
+	// only handle zones we are configured to respond for
+	zone := plugin.Zones(n.Zones).Matches(state.Name())
+	if zone == "" {
+		return plugin.NextOrFailure(n.Name(), n.Next, ctx, w, r)
+	}
 
 	// Export metric with the server label set to the current
 	// server handling the request.

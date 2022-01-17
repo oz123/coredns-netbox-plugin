@@ -51,7 +51,7 @@ be able to fall-through to (eg `file:file` or `forward:forward`).
 ## Syntax
 
 ```
-netbox {
+netbox [ZONES...] {
   token TOKEN
   url URL
   localCacheDuration DURATION
@@ -60,6 +60,7 @@ netbox {
 }
 ```
 
+* **ZONES** zones that the *netbox* should be authoritative for.
 * `token` **TOKEN** sets the API token used to authenticate against NetBox
   (**REQUIRED**).
 * `url` **URL** defines the URL *netbox* should query. This URL must be
@@ -93,8 +94,8 @@ Send requests within `example.org` to NetBox and fall-through to the `file`
 plugin in order to respond to unsupported record types (ie `SOA`, `NS` etc):
 
 ```
-example.org {
-    netbox {
+. {
+    netbox example.org {
         token SuperSecretNetBoxAPIToken
         url https://netbox.example.org/api/ipam/ip-addresses
         localCacheDuration 300s
@@ -116,7 +117,7 @@ plugin for requests within `example.org`:
         localCacheDuration 300s
         fallthrough example.org
     }
-    forward 1.1.1.1 1.0.0.1
+    forward . 1.1.1.1 1.0.0.1
 }
 ```
 

@@ -15,7 +15,6 @@
 package netbox
 
 import (
-	"errors"
 	"time"
 
 	"github.com/coredns/coredns/core/dnsserver"
@@ -27,6 +26,10 @@ import (
 
 var VERSION = "0.1.1-dev"
 
+const (
+	defaultTTL = 3600
+)
+
 // init registers this plugin.
 func init() { plugin.Register("netbox", setup) }
 
@@ -34,10 +37,13 @@ func init() { plugin.Register("netbox", setup) }
 // for parsing any extra options the example plugin may have. The first token this function sees is "example".
 func setup(c *caddy.Controller) error {
 
-	n, err := newNetBox(c)
+	// parse config block in Corefile
+	n, err := parseNetbox(c)
 	if err != nil {
 		return plugin.Error("netbox", err)
 	}
+
+	log.Infof("Version %s", VERSION)
 
 	// Add a startup function that will -- after all plugins have been loaded -- check if the
 	// prometheus plugin has been used - if so we will export metrics. We can only register
@@ -65,63 +71,79 @@ func setup(c *caddy.Controller) error {
 	return nil
 }
 
-func newNetBox(c *caddy.Controller) (Netbox, error) {
-	var n = Netbox{
-		TTL: 3600 * time.Second,
+// newNetbox returns a basic *Netbox type with some defaults set
+func newNetbox() *Netbox {
+	return &Netbox{
+		TTL:   defaultTTL,
+		Zones: []string{"."},
 	}
+}
 
+// parseNetbox handles parsing of the plugins config
+func parseNetbox(c *caddy.Controller) (*Netbox, error) {
+	n := newNetbox()
+	i := 0
 	for c.Next() {
-		if c.NextBlock() {
-			for {
-				switch c.Val() {
-				case "fallthrough":
-					n.Fall.SetZonesFromArgs(c.RemainingArgs())
+		// ensure plugin is only included once in each block
+		if i > 0 {
+			return nil, plugin.ErrOnce
+		}
+		i++
 
-				case "url":
-					if !c.NextArg() {
-						return Netbox{}, c.ArgErr()
-					}
-					n.Url = c.Val()
-
-				case "token":
-					if !c.NextArg() {
-						return Netbox{}, c.ArgErr()
-					}
-					n.Token = c.Val()
-
-				case "localCacheDuration":
-					if !c.NextArg() {
-						return Netbox{}, c.ArgErr()
-					}
-					duration, err := time.ParseDuration(c.Val())
-					if err != nil {
-						return Netbox{}, c.Errf("invalid 'localCacheDuration': %s", err)
-					}
-					n.CacheDuration = duration
-				case "ttl":
-					if !c.NextArg() {
-						return Netbox{}, c.ArgErr()
-					}
-					duration, err := time.ParseDuration(c.Val())
-					if err != nil {
-						return Netbox{}, c.Errf("invalid 'ttl': %s", err)
-					}
-					n.TTL = duration
-				}
-
-				if !c.Next() {
-					break
-				}
-			}
+		// handle netbox [zones...]
+		zones := plugin.OriginsFromArgsOrServerBlock(c.RemainingArgs(), c.ServerBlockKeys)
+		if len(zones) > 0 {
+			n.Zones = zones
 		}
 
+		// parse inside block
+		for c.NextBlock() {
+			switch c.Val() {
+			case "fallthrough":
+				n.Fall.SetZonesFromArgs(c.RemainingArgs())
+
+			case "url":
+				if !c.NextArg() {
+					return nil, c.ArgErr()
+				}
+				n.Url = c.Val()
+
+			case "token":
+				if !c.NextArg() {
+					return n, c.ArgErr()
+				}
+				n.Token = c.Val()
+
+			case "localCacheDuration":
+				if !c.NextArg() {
+					return nil, c.ArgErr()
+				}
+				duration, err := time.ParseDuration(c.Val())
+				if err != nil {
+					return nil, c.Errf("invalid 'localCacheDuration': %s", err)
+				}
+				n.CacheDuration = duration
+
+			case "ttl":
+				if !c.NextArg() {
+					return nil, c.ArgErr()
+				}
+				duration, err := time.ParseDuration(c.Val())
+				if err != nil {
+					return n, c.Errf("could not parse 'ttl': %s", err)
+				}
+				n.TTL = duration
+
+			default:
+				return nil, c.Errf("unknown property '%s'", c.Val())
+			}
+		}
 	}
 
+	// fail if url, token or localCacheDuration are not set
 	if n.Url == "" || n.Token == "" || n.CacheDuration == 0 {
-		return Netbox{}, errors.New("Could not parse config")
+		return nil, c.Err("Invalid config")
 	}
 
-	log.Infof("Started plugin version %s", VERSION)
 	return n, nil
-
 }
