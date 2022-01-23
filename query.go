@@ -16,10 +16,9 @@ package netbox
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"net"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/imkira/go-ttlmap"
 )
@@ -41,78 +40,77 @@ type RecordsList struct {
 
 var localCache = ttlmap.New(nil)
 
-func query(url, token, dns_name string, duration time.Duration, family int) (string, error) {
+func get(client *http.Client, url, token string) (*http.Response, error) {
+	// handle if provided client was not set up
+	if client == nil {
+		return nil, fmt.Errorf("provided *http.Client was invalid")
+	}
+
+	// set up HTTP request
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// set authorization header for request to NetBox
+	req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
+
+	// do request
+	return client.Do(req)
+}
+
+func (n *Netbox) query(host string, family int) ([]net.IP, error) {
+	var (
+		dns_name = strings.TrimSuffix(host, ".")
+		requrl   = fmt.Sprintf("%s/?dns_name=%s", n.Url, dns_name)
+		records  RecordsList
+	)
+
 	item, err := localCache.Get(dns_name)
 	if err == nil {
 		log.Debugf("Found in local cache %s", dns_name)
-		return item.Value().(string), nil
-	} else {
-		records := RecordsList{}
-		client := &http.Client{}
-		var resp *http.Response
-		log.Debugf("Querying %s/?dns_name=%s", url, dns_name)
-		//logger.Printf("Querying %s ", fmt.Sprintf("%s/?dns_name=%s", url, dns_name))
-		req, err := http.NewRequest("GET", fmt.Sprintf("%s/?dns_name=%s", url, dns_name), nil)
-		if err != nil {
-			return "", err
-		}
-
-		req.Header.Set("Authorization", fmt.Sprintf("Token %s", token))
-
-		for i := 1; i <= 10; i++ {
-			resp, err = client.Do(req)
-
-			if err != nil {
-				return "", err
-			}
-
-			if resp.StatusCode == http.StatusOK {
-				break
-			}
-
-			time.Sleep(1 * time.Second)
-		}
-
-		if resp.StatusCode != http.StatusOK {
-			return "", fmt.Errorf("invalid HTTP resoponse code: %d", resp.StatusCode)
-		}
-
-		body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return "", err
-		}
-
-		jsonAns := string(body)
-		err = json.Unmarshal([]byte(jsonAns), &records)
-		if err != nil {
-			return "", err
-		}
-
-		if len(records.Records) == 0 {
-			log.Debugf("recored not found response: %s", jsonAns)
-			return "", nil
-		}
-
-		var ip_address string
-		switch family {
-		case 4:
-			for _, r := range records.Records {
-				if r.Family.Version == 4 {
-					ip_address = strings.Split(r.Address, "/")[0]
-					_ = localCache.Set(dns_name, ttlmap.NewItem(ip_address, ttlmap.WithTTL(duration)), nil)
-					break
-				}
-			}
-		case 6:
-			for _, r := range records.Records {
-				if r.Family.Version == 6 {
-					ip_address = strings.Split(r.Address, "/")[0]
-					_ = localCache.Set(dns_name, ttlmap.NewItem(ip_address, ttlmap.WithTTL(duration)), nil)
-					break
-				}
-			}
-
-		}
-		return ip_address, nil
+		return item.Value().([]net.IP), nil
 	}
+
+	// Initialise an empty slice of IP addresses
+	addresses := make([]net.IP, 0)
+
+	// do http request against NetBox instance
+	resp, err := get(n.Client, requrl, n.Token)
+	if err != nil {
+		return addresses, fmt.Errorf("Problem performing request: %w", err)
+	}
+
+	// ensure body is closed once we are done
+	defer resp.Body.Close()
+
+	// status code must be http.StatusOK
+	if resp.StatusCode != http.StatusOK {
+		return addresses, fmt.Errorf("Bad HTTP response code: %d", resp.StatusCode)
+	}
+
+	// read and parse response body
+	decoder := json.NewDecoder(resp.Body)
+	if err := decoder.Decode(&records); err != nil {
+		return addresses, fmt.Errorf("Could not unmarshal response: %w", err)
+	}
+
+	// handle empty list of records
+	if len(records.Records) == 0 {
+		return addresses, nil
+	}
+
+	// grab returned address of specified address family
+	for _, r := range records.Records {
+		if r.Family.Version == family {
+			if addr := net.ParseIP(strings.Split(r.Address, "/")[0]); addr != nil {
+				addresses = append(addresses, addr)
+			}
+		}
+	}
+
+	// add to local cache
+	_ = localCache.Set(dns_name, ttlmap.NewItem(addresses, ttlmap.WithTTL(n.CacheDuration)), nil)
+
+	return addresses, nil
 }
