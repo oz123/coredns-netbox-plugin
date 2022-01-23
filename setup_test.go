@@ -16,6 +16,7 @@ package netbox
 
 import (
 	//"fmt"
+	"net/http"
 	"testing"
 	"time"
 
@@ -45,6 +46,7 @@ func TestParseNetbox(t *testing.T) {
 				CacheDuration: time.Second * 10,
 				Next:          plugin.Handler(nil),
 				Zones:         []string{"."},
+				Client:        &http.Client{},
 			},
 		},
 		{
@@ -58,6 +60,7 @@ func TestParseNetbox(t *testing.T) {
 				CacheDuration: time.Second * 10,
 				Next:          plugin.Handler(nil),
 				Zones:         []string{"example.org."},
+				Client:        &http.Client{},
 			},
 		},
 		{
@@ -71,6 +74,7 @@ func TestParseNetbox(t *testing.T) {
 				CacheDuration: time.Second * 10,
 				Next:          plugin.Handler(nil),
 				Zones:         []string{"example.org.", "example.net."},
+				Client:        &http.Client{},
 			},
 		},
 		{
@@ -102,6 +106,7 @@ func TestParseNetbox(t *testing.T) {
 				CacheDuration: time.Second * 10,
 				Next:          plugin.Handler(nil),
 				Zones:         []string{"."},
+				Client:        &http.Client{},
 			},
 		},
 		{
@@ -122,6 +127,7 @@ func TestParseNetbox(t *testing.T) {
 				Next:          plugin.Handler(nil),
 				Zones:         []string{"."},
 				Fall:          fall.F{Zones: []string{"."}},
+				Client:        &http.Client{},
 			},
 		},
 		{
@@ -136,6 +142,7 @@ func TestParseNetbox(t *testing.T) {
 				Next:          plugin.Handler(nil),
 				Zones:         []string{"."},
 				Fall:          fall.F{Zones: []string{"example.org."}},
+				Client:        &http.Client{},
 			},
 		},
 		{
@@ -150,6 +157,7 @@ func TestParseNetbox(t *testing.T) {
 				Next:          plugin.Handler(nil),
 				Zones:         []string{"."},
 				Fall:          fall.F{Zones: []string{"example.org.", "example.net."}},
+				Client:        &http.Client{},
 			},
 		},
 	}

@@ -15,6 +15,7 @@
 package netbox
 
 import (
+	"net/http"
 	"time"
 
 	"github.com/coredns/coredns/core/dnsserver"
@@ -74,8 +75,9 @@ func setup(c *caddy.Controller) error {
 // newNetbox returns a basic *Netbox type with some defaults set
 func newNetbox() *Netbox {
 	return &Netbox{
-		TTL:   defaultTTL,
-		Zones: []string{"."},
+		TTL:    defaultTTL,
+		Zones:  []string{"."},
+		Client: &http.Client{},
 	}
 }
 
