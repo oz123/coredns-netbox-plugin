@@ -17,33 +17,19 @@ package netbox
 import (
 	"fmt"
 	"net/http"
-
-	clog "github.com/coredns/coredns/plugin/pkg/log"
 )
 
 func (n Netbox) Ready() bool {
-	client := &http.Client{}
-	var resp *http.Response
-
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s/?limit=1", n.Url), nil)
-	req.Header.Set("Authorization", fmt.Sprintf("Token %s", n.Token))
-
+	resp, err := get(n.Client, fmt.Sprintf("%s/?limit=1", n.Url), n.Token)
 	if err != nil {
-		clog.Warning("Could not setup HTTP request, check your configuration\n")
+		log.Warning("HTTP request failed, check your configuration")
 		return false
 	}
 
-	resp, err = client.Do(req)
-
-	if err != nil {
-		clog.Warning("Could HTTP request failed, check your configuration\n")
+	if resp.StatusCode != http.StatusOK {
+		log.Warning(fmt.Sprintf("The server returned error code: %d", resp.StatusCode))
 		return false
 	}
 
-	if resp.StatusCode == http.StatusOK {
-		return true
-	} else {
-		clog.Warning(fmt.Sprintf("The server returned error code: %d\n", resp.StatusCode))
-		return false
-	}
+	return true
 }
