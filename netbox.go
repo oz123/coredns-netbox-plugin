@@ -50,7 +50,7 @@ const (
 	familyIP6 = 6
 )
 
-func (n Netbox) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) (int, error) {
+func (n *Netbox) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) (int, error) {
 	var (
 		ips []net.IP
 		err error
@@ -122,7 +122,7 @@ func (n Netbox) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) 
 }
 
 // Name implements the Handler interface.
-func (n Netbox) Name() string { return "netbox" }
+func (n *Netbox) Name() string { return "netbox" }
 
 func a(zone string, ttl uint32, ips []net.IP) []dns.RR {
 	answers := make([]dns.RR, len(ips))
