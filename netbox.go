@@ -50,6 +50,7 @@ const (
 	familyIP6 = 6
 )
 
+// ServeDNS implements the plugin.Handler interface
 func (n *Netbox) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) (int, error) {
 	var (
 		ips []net.IP
@@ -124,6 +125,7 @@ func (n *Netbox) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg)
 // Name implements the Handler interface.
 func (n *Netbox) Name() string { return "netbox" }
 
+// a takes a slice of net.IPs and returns a slice of A RRs.
 func a(zone string, ttl uint32, ips []net.IP) []dns.RR {
 	answers := make([]dns.RR, len(ips))
 	for i, ip := range ips {
