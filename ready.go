@@ -19,7 +19,7 @@ import (
 	"net/http"
 )
 
-func (n Netbox) Ready() bool {
+func (n *Netbox) Ready() bool {
 	resp, err := get(n.Client, fmt.Sprintf("%s/?limit=1", n.Url), n.Token)
 	if err != nil {
 		log.Warning("HTTP request failed, check your configuration")
