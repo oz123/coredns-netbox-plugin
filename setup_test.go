@@ -46,7 +46,9 @@ func TestParseNetbox(t *testing.T) {
 				CacheDuration: time.Second * 10,
 				Next:          plugin.Handler(nil),
 				Zones:         []string{"."},
-				Client:        &http.Client{},
+				Client: &http.Client{
+					Timeout: defaultTimeout,
+				},
 			},
 		},
 		{
@@ -60,7 +62,9 @@ func TestParseNetbox(t *testing.T) {
 				CacheDuration: time.Second * 10,
 				Next:          plugin.Handler(nil),
 				Zones:         []string{"example.org."},
-				Client:        &http.Client{},
+				Client: &http.Client{
+					Timeout: defaultTimeout,
+				},
 			},
 		},
 		{
@@ -74,7 +78,9 @@ func TestParseNetbox(t *testing.T) {
 				CacheDuration: time.Second * 10,
 				Next:          plugin.Handler(nil),
 				Zones:         []string{"example.org.", "example.net."},
-				Client:        &http.Client{},
+				Client: &http.Client{
+					Timeout: defaultTimeout,
+				},
 			},
 		},
 		{
@@ -106,12 +112,36 @@ func TestParseNetbox(t *testing.T) {
 				CacheDuration: time.Second * 10,
 				Next:          plugin.Handler(nil),
 				Zones:         []string{"."},
-				Client:        &http.Client{},
+				Client: &http.Client{
+					Timeout: defaultTimeout,
+				},
 			},
 		},
 		{
 			"config with invalid ttl",
 			"netbox {\nurl example.org\ntoken foobar\nlocalCacheDuration 10s\nttl INVALID\n}\n",
+			true,
+			nil,
+		},
+		{
+			"config with timeout",
+			"netbox {\nurl example.org\ntoken foobar\nlocalCacheDuration 10s\ntimeout 2s\n}\n",
+			false,
+			&Netbox{
+				Url:           "example.org",
+				Token:         "foobar",
+				TTL:           defaultTTL,
+				CacheDuration: time.Second * 10,
+				Next:          plugin.Handler(nil),
+				Zones:         []string{"."},
+				Client: &http.Client{
+					Timeout: time.Second * 2,
+				},
+			},
+		},
+		{
+			"config with invalid timeout",
+			"netbox {\nurl example.org\ntoken foobar\nlocalCacheDuration 10s\ntimeout INVALID\n}\n",
 			true,
 			nil,
 		},
@@ -127,7 +157,9 @@ func TestParseNetbox(t *testing.T) {
 				Next:          plugin.Handler(nil),
 				Zones:         []string{"."},
 				Fall:          fall.F{Zones: []string{"."}},
-				Client:        &http.Client{},
+				Client: &http.Client{
+					Timeout: defaultTimeout,
+				},
 			},
 		},
 		{
@@ -142,7 +174,9 @@ func TestParseNetbox(t *testing.T) {
 				Next:          plugin.Handler(nil),
 				Zones:         []string{"."},
 				Fall:          fall.F{Zones: []string{"example.org."}},
-				Client:        &http.Client{},
+				Client: &http.Client{
+					Timeout: defaultTimeout,
+				},
 			},
 		},
 		{
@@ -157,7 +191,9 @@ func TestParseNetbox(t *testing.T) {
 				Next:          plugin.Handler(nil),
 				Zones:         []string{"."},
 				Fall:          fall.F{Zones: []string{"example.org.", "example.net."}},
-				Client:        &http.Client{},
+				Client: &http.Client{
+					Timeout: defaultTimeout,
+				},
 			},
 		},
 	}

@@ -56,6 +56,7 @@ netbox [ZONES...] {
   url URL
   localCacheDuration DURATION
   ttl DURATION
+  timeout DURATION
   fallthrough [ZONES...]
 }
 ```
@@ -69,6 +70,8 @@ netbox [ZONES...] {
   NetBox.
 * `ttl` **DURATION** defines the TTL of records returned from *netbox*. Default
   is 1h (3600s).
+* `timeout` **DURATION** defines the HTTP timeout for API requests against
+  NetBox. Default is 5s.
 * `fallthrough` If a zone matches but no record can be generated, pass request
 to the next plugin. If **[ZONES…]** is omitted, then fallthrough happens for
 all zones for which the plugin is authoritative. If specific zones are listed
