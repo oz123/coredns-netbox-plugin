@@ -28,7 +28,8 @@ import (
 var VERSION = "0.1.1-dev"
 
 const (
-	defaultTTL = 3600
+	defaultTTL     = 3600            // 3600s
+	defaultTimeout = time.Second * 5 // 5s
 )
 
 // init registers this plugin.
@@ -75,9 +76,11 @@ func setup(c *caddy.Controller) error {
 // newNetbox returns a basic *Netbox type with some defaults set
 func newNetbox() *Netbox {
 	return &Netbox{
-		TTL:    defaultTTL,
-		Zones:  []string{"."},
-		Client: &http.Client{},
+		TTL:   defaultTTL,
+		Zones: []string{"."},
+		Client: &http.Client{
+			Timeout: defaultTimeout,
+		},
 	}
 }
 
@@ -135,6 +138,16 @@ func parseNetbox(c *caddy.Controller) (*Netbox, error) {
 					return n, c.Errf("could not parse 'ttl': %s", err)
 				}
 				n.TTL = duration
+
+			case "timeout":
+				if !c.NextArg() {
+					return nil, c.ArgErr()
+				}
+				duration, err := time.ParseDuration(c.Val())
+				if err != nil {
+					return n, c.Errf("could not parse 'timeout': %s", err)
+				}
+				n.Client.Timeout = duration
 
 			default:
 				return nil, c.Errf("unknown property '%s'", c.Val())
