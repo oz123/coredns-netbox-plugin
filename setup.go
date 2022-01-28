@@ -21,6 +21,7 @@ import (
 	"github.com/coredns/coredns/core/dnsserver"
 	"github.com/coredns/coredns/plugin"
 	"github.com/coredns/coredns/plugin/metrics"
+	ctls "github.com/coredns/coredns/plugin/pkg/tls"
 
 	"github.com/coredns/caddy"
 )
@@ -128,6 +129,21 @@ func parseNetbox(c *caddy.Controller) (*Netbox, error) {
 					return nil, c.Errf("invalid 'localCacheDuration': %s", err)
 				}
 				n.CacheDuration = duration
+
+			case "tls":
+				args := c.RemainingArgs()
+				tlsConfig, err := ctls.NewTLSConfigFromArgs(args...)
+				if err != nil {
+					return n, err
+				}
+
+				// set up *http.Transport
+				transport := &http.Transport{
+					TLSClientConfig: tlsConfig,
+				}
+
+				// add to client
+				n.Client.Transport = transport
 
 			case "ttl":
 				if !c.NextArg() {
