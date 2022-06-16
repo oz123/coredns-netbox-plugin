@@ -23,11 +23,18 @@ import (
 	"github.com/coredns/caddy"
 	"github.com/coredns/coredns/plugin"
 	"github.com/coredns/coredns/plugin/pkg/fall"
+	ctls "github.com/coredns/coredns/plugin/pkg/tls"
 	"github.com/stretchr/testify/assert"
 )
 
 // TestParseNetbox tests the various things that should be parsed by setup.
 func TestParseNetbox(t *testing.T) {
+	// set up some tls configs for later tests
+	defaultTLSConfig, err := ctls.NewTLSConfigFromArgs([]string{}...)
+	if err != nil {
+		panic(err)
+	}
+
 	// tests to run
 	tests := []struct {
 		msg     string
@@ -195,6 +202,47 @@ func TestParseNetbox(t *testing.T) {
 					Timeout: defaultTimeout,
 				},
 			},
+		},
+		{
+			"config with https",
+			"netbox {\nurl https://example.org\ntoken foobar\nlocalCacheDuration 10s\n}\n",
+			false,
+			&Netbox{
+				Url:           "https://example.org",
+				Token:         "foobar",
+				TTL:           defaultTTL,
+				CacheDuration: time.Second * 10,
+				Next:          plugin.Handler(nil),
+				Zones:         []string{"."},
+				Client: &http.Client{
+					Timeout: defaultTimeout,
+				},
+			},
+		},
+		{
+			"config with https and tls (no options)",
+			"netbox {\nurl https://example.org\ntoken foobar\nlocalCacheDuration 10s\ntls\n}\n",
+			false,
+			&Netbox{
+				Url:           "https://example.org",
+				Token:         "foobar",
+				TTL:           defaultTTL,
+				CacheDuration: time.Second * 10,
+				Next:          plugin.Handler(nil),
+				Zones:         []string{"."},
+				Client: &http.Client{
+					Timeout: defaultTimeout,
+					Transport: &http.Transport{
+						TLSClientConfig: defaultTLSConfig,
+					},
+				},
+			},
+		},
+		{
+			"config with https and tls (invalid config)",
+			"netbox {\nurl https://example.org\ntoken foobar\nlocalCacheDuration 10s\ntls testing/missing.crt\n}\n",
+			true,
+			nil,
 		},
 	}
 

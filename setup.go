@@ -137,13 +137,10 @@ func parseNetbox(c *caddy.Controller) (*Netbox, error) {
 					return n, err
 				}
 
-				// set up *http.Transport
-				transport := &http.Transport{
+				// add custom transport to client
+				n.Client.Transport = &http.Transport{
 					TLSClientConfig: tlsConfig,
 				}
-
-				// add to client
-				n.Client.Transport = transport
 
 			case "ttl":
 				if !c.NextArg() {
