@@ -22,11 +22,6 @@ import (
 	"gopkg.in/h2non/gock.v1"
 )
 
-var (
-	anotherHostWithIPv4 = `{"results": [{"family": {"value": 4, "label": "IPv4"},
-                                         "address": "10.0.0.2/25", "dns_name": "my_host"}]}`
-)
-
 func TestQuery(t *testing.T) {
 	// set up dummy Netbox
 	n := newNetbox()
