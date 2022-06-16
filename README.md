@@ -69,7 +69,7 @@ netbox [ZONES...] {
   specified in full as `SCHEME://HOST/api/ipam/ip-addresses` (**REQUIRED**).
 * `localCacheDuration` **DURATION** sets the time to cache responses from
   NetBox.
-* `tls` followed by:
+* `tls` is followed by:
   * no arguments, if the server certificate is signed by a system-installed
     CA and no client cert is needed (this is the default if HTTPS is used).
   * a single argument that is the CA PEM file, if the server cert is not
@@ -80,6 +80,9 @@ netbox [ZONES...] {
   * three arguments - path to cert PEM file, path to client private key PEM
     file, path to CA PEM file - if the server certificate is not signed by a
     system-installed CA and client certificate is needed.
+  
+  These options set certificate verification method for the NetBox server if
+  HTTPS is used to access the API.
 * `ttl` **DURATION** defines the TTL of records returned from *netbox*. Default
   is 1h (3600s).
 * `timeout` **DURATION** defines the HTTP timeout for API requests against
