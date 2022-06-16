@@ -54,7 +54,6 @@ be able to fall-through to (eg `file:file` or `forward:forward`).
 netbox [ZONES...] {
   token TOKEN
   url URL
-  localCacheDuration DURATION
   ttl DURATION
   timeout DURATION
   fallthrough [ZONES...]
@@ -66,8 +65,6 @@ netbox [ZONES...] {
   (**REQUIRED**).
 * `url` **URL** defines the URL *netbox* should query. This URL must be
   specified in full as `SCHEME://HOST/api/ipam/ip-addresses` (**REQUIRED**).
-* `localCacheDuration` **DURATION** sets the time to cache responses from
-  NetBox.
 * `ttl` **DURATION** defines the TTL of records returned from *netbox*. Default
   is 1h (3600s).
 * `timeout` **DURATION** defines the HTTP timeout for API requests against
@@ -88,7 +85,6 @@ Send all requests to NetBox:
     netbox {
         token SuperSecretNetBoxAPIToken
         url https://netbox.example.org/api/ipam/ip-addresses
-        localCacheDuration 300s
     }
 }
 ```
@@ -101,7 +97,6 @@ plugin in order to respond to unsupported record types (ie `SOA`, `NS` etc):
     netbox example.org {
         token SuperSecretNetBoxAPIToken
         url https://netbox.example.org/api/ipam/ip-addresses
-        localCacheDuration 300s
         fallthrough
     }
     file db.example.org
@@ -110,17 +105,17 @@ plugin in order to respond to unsupported record types (ie `SOA`, `NS` etc):
 ```
 
 Handle all requests with *netbox* and fall-through to the `forward`
-plugin for requests within `example.org`:
+plugin for requests within `example.org` with caching via the `cache` plugin:
 
 ```
 . {
     netbox {
         token SuperSecretNetBoxAPIToken
         url https://netbox.example.org/api/ipam/ip-addresses
-        localCacheDuration 300s
         fallthrough example.org
     }
     forward . 1.1.1.1 1.0.0.1
+    cache
 }
 ```
 

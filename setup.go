@@ -119,16 +119,6 @@ func parseNetbox(c *caddy.Controller) (*Netbox, error) {
 				}
 				n.Token = c.Val()
 
-			case "localCacheDuration":
-				if !c.NextArg() {
-					return nil, c.ArgErr()
-				}
-				duration, err := time.ParseDuration(c.Val())
-				if err != nil {
-					return nil, c.Errf("invalid 'localCacheDuration': %s", err)
-				}
-				n.CacheDuration = duration
-
 			case "ttl":
 				if !c.NextArg() {
 					return nil, c.ArgErr()
@@ -155,8 +145,8 @@ func parseNetbox(c *caddy.Controller) (*Netbox, error) {
 		}
 	}
 
-	// fail if url, token or localCacheDuration are not set
-	if n.Url == "" || n.Token == "" || n.CacheDuration == 0 {
+	// fail if url or token are not set
+	if n.Url == "" || n.Token == "" {
 		return nil, c.Err("Invalid config")
 	}
 

@@ -19,8 +19,6 @@ import (
 	"net"
 	"net/http"
 	"strings"
-
-	"github.com/imkira/go-ttlmap"
 )
 
 type Record struct {
@@ -37,8 +35,6 @@ type Family struct {
 type RecordsList struct {
 	Records []Record `json:"results"`
 }
-
-var localCache = ttlmap.New(nil)
 
 func get(client *http.Client, url, token string) (*http.Response, error) {
 	// handle if provided client was not set up
@@ -65,12 +61,6 @@ func (n *Netbox) query(host string, family int) ([]net.IP, error) {
 		requrl   = fmt.Sprintf("%s/?dns_name=%s", n.Url, dns_name)
 		records  RecordsList
 	)
-
-	item, err := localCache.Get(dns_name)
-	if err == nil {
-		log.Debugf("Found in local cache %s", dns_name)
-		return item.Value().([]net.IP), nil
-	}
 
 	// Initialise an empty slice of IP addresses
 	addresses := make([]net.IP, 0)
@@ -108,9 +98,6 @@ func (n *Netbox) query(host string, family int) ([]net.IP, error) {
 			}
 		}
 	}
-
-	// add to local cache
-	_ = localCache.Set(dns_name, ttlmap.NewItem(addresses, ttlmap.WithTTL(n.CacheDuration)), nil)
 
 	return addresses, nil
 }
