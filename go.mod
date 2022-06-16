@@ -5,7 +5,6 @@ go 1.15
 require (
 	github.com/coredns/caddy v1.1.1
 	github.com/coredns/coredns v1.8.6
-	github.com/imkira/go-ttlmap v2.0.0+incompatible
 	github.com/miekg/dns v1.1.43
 	github.com/prometheus/client_golang v1.11.0
 	github.com/stretchr/testify v1.7.0
