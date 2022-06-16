@@ -59,7 +59,6 @@ netbox [ZONES...] {
   ttl DURATION
   timeout DURATION
   fallthrough [ZONES...]
-
 }
 ```
 
