@@ -13,28 +13,28 @@ ifndef target
 endif
 
 
-coredns-fetch:
+coredns-fetch: ## download coredns to local directory
 	 wget https://github.com/coredns/coredns/archive/refs/tags/v$(VERSION).zip -O coredns-v$(VERSION).zip
 
 
-coredns-unzip:
+coredns-unzip: ## unzip coredns distribution
 	unzip coredns-v$(VERSION).zip
 
 
 .PHONY: coredns-patch-go.mod
-coredns-patch-go.mod:
-	echo 'replace github.com/oz123/coredns-netbox-plugin =>' $(CURDIR) >> coredns-$(VERSION)/go.mod
-	echo 'netbox:github.com/oz123/coredns-netbox-plugin' >> coredns-$(VERSION)/plugin.cfg
+coredns-patch-go.mod:  ## patch coredns to local compile
+	grep netbox-plugin coredns-$(VERSION)/go.mod || echo 'replace github.com/oz123/coredns-netbox-plugin =>' $(CURDIR) >> coredns-$(VERSION)/go.mod
+	grep netbox-plugin coredns-$(VERSION)/go.mod || echo 'netbox:github.com/oz123/coredns-netbox-plugin' >> coredns-$(VERSION)/plugin.cfg
 
 .PHONY: coredns-build
-coredns-build:
+coredns-build:  ## build local coredns with the plugin installed
 	#go get github.com/oz123/coredns-netbox-plugin
 	#go get github.com/coredns/coredns/plugin/etcd
 	#cd coredns-1.8.4/ && go get github.com/oz123/coredns-netbox-plugin
 	make -C coredns-$(VERSION)/
 
 .PHONY: coredns-run ## run the compiled version with plugin
-coredns-run:
+coredns-run:  ## run patched coredns
 	./coredns-$(VERSION)/coredns -conf Corefile.example -p 5300
 
 .PHONY: coredns-clean
