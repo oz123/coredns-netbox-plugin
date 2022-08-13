@@ -55,7 +55,6 @@ netbox [ZONES...] {
   token TOKEN
   url URL
   tls CERT KEY CACERT
-  timeout DURATION
   fallthrough [ZONES...]
 }
 ```
