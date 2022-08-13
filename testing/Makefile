@@ -5,6 +5,7 @@ SHELL := /bin/bash
 .DEFAULT_GOAL := help
 
 HELP_GENERATOR = mh
+COMPOSE ?= docker compose
 
 .PHONY: help netbox-launch netbox-data-import netbox-data-dump
 

@@ -197,15 +197,14 @@ func TestParseNetbox(t *testing.T) {
 		},
 		{
 			"config with https",
-			"netbox {\nurl https://example.org\ntoken foobar\nlocalCacheDuration 10s\n}\n",
+			"netbox {\nurl https://example.org\ntoken foobar\n}\n",
 			false,
 			&Netbox{
-				Url:           "https://example.org",
-				Token:         "foobar",
-				TTL:           defaultTTL,
-				CacheDuration: time.Second * 10,
-				Next:          plugin.Handler(nil),
-				Zones:         []string{"."},
+				Url:   "https://example.org",
+				Token: "foobar",
+				TTL:   defaultTTL,
+				Next:  plugin.Handler(nil),
+				Zones: []string{"."},
 				Client: &http.Client{
 					Timeout: defaultTimeout,
 				},
@@ -213,15 +212,14 @@ func TestParseNetbox(t *testing.T) {
 		},
 		{
 			"config with https and tls (no options)",
-			"netbox {\nurl https://example.org\ntoken foobar\nlocalCacheDuration 10s\ntls\n}\n",
+			"netbox {\nurl https://example.org\ntoken foobar\ntls\n}\n",
 			false,
 			&Netbox{
-				Url:           "https://example.org",
-				Token:         "foobar",
-				TTL:           defaultTTL,
-				CacheDuration: time.Second * 10,
-				Next:          plugin.Handler(nil),
-				Zones:         []string{"."},
+				Url:   "https://example.org",
+				Token: "foobar",
+				TTL:   defaultTTL,
+				Next:  plugin.Handler(nil),
+				Zones: []string{"."},
 				Client: &http.Client{
 					Timeout: defaultTimeout,
 					Transport: &http.Transport{
@@ -232,7 +230,7 @@ func TestParseNetbox(t *testing.T) {
 		},
 		{
 			"config with https and tls (invalid config)",
-			"netbox {\nurl https://example.org\ntoken foobar\nlocalCacheDuration 10s\ntls testing/missing.crt\n}\n",
+			"netbox {\nurl https://example.org\ntoken foobar\ntls testing/missing.crt\n}\n",
 			true,
 			nil,
 		},

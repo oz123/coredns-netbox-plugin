@@ -120,16 +120,6 @@ func parseNetbox(c *caddy.Controller) (*Netbox, error) {
 				}
 				n.Token = c.Val()
 
-			case "localCacheDuration":
-				if !c.NextArg() {
-					return nil, c.ArgErr()
-				}
-				duration, err := time.ParseDuration(c.Val())
-				if err != nil {
-					return nil, c.Errf("invalid 'localCacheDuration': %s", err)
-				}
-				n.CacheDuration = duration
-
 			case "tls":
 				args := c.RemainingArgs()
 				tlsConfig, err := ctls.NewTLSConfigFromArgs(args...)
