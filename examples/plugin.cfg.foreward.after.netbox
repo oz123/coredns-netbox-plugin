@@ -1,0 +1,43 @@
+# Directives are registered in the order they should be executed.
+#
+# Ordering is VERY important. Every plugin will feel the effects of all other
+# plugin below (after) them during a request, but they must not care what plugin
+# above them are doing.
+
+# How to rebuild with updated plugin configurations: Modify the list below and
+# run `go generate && go build`
+
+# The parser takes the input format of:
+#
+#     <plugin-name>:<package-name>
+# Or
+#     <plugin-name>:<fully-qualified-package-name>
+#
+# External plugin example:
+#
+# log:github.com/coredns/coredns/plugin/log
+# Local plugin example:
+# log:log
+
+reload:reload
+nsid:nsid
+root:root
+bind:bind
+debug:debug
+trace:trace
+ready:ready
+health:health
+errors:errors
+log:log
+local:local
+any:any
+cache:cache
+minimal:minimal
+hosts:hosts
+netbox:github.com/oz123/coredns-netbox-plugin
+file:file
+auto:auto
+secondary:secondary
+etcd:etcd
+loop:loop
+forward:forward

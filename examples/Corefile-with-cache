@@ -1,0 +1,37 @@
+# cache, if entry is found it will be saved in the cache and not be
+# asked again
+. {
+  debug
+  netbox {
+    token 0123456789abcdef0123456789abcdef01234567
+    url http://localhost:8000/api/ipam/ip-addresses
+  }
+  cache 300  # see docs for the cache Plugin about config
+}
+
+# Dig is telling you how long is the cache still active:
+#
+# $ dig -p 1053 @127.0.0.1 mail.foo.com
+
+#; <<>> DiG 9.16.30 <<>> -p 1053 @127.0.0.1 mail.foo.com
+#; (1 server found)
+#;; global options: +cmd
+#;; Got answer:
+#;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 17192
+#;; flags: qr aa rd; QUERY: 1, ANSWER: 1, AUTHORITY: 0, ADDITIONAL: 1
+#;; WARNING: recursion requested but not available
+#
+#;; OPT PSEUDOSECTION:
+#; EDNS: version: 0, flags:; udp: 4096
+#; COOKIE: 77746c7aa45ca6ac (echoed)
+#;; QUESTION SECTION:
+#;mail.foo.com.				IN	A
+#
+#;; ANSWER SECTION:
+#mail.foo.com.			298	IN	A	192.168.1.0
+#
+#;; Query time: 0 msec
+#;; SERVER: 127.0.0.1#1053(127.0.0.1)
+#;; WHEN: Sat Aug 13 14:07:23 CEST 2022
+#;; MSG SIZE  rcvd: 67
+

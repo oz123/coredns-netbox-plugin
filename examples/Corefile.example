@@ -11,19 +11,14 @@
 # Alternatively if netbox was added after hosts then requests that are not
 # answered by hosts will fallthrough to netbox.
 #
-. {
-  debug
-  netbox {
-    token 0123456789abcdef0123456789abcdef01234567
-    url http://localhost:8000/api/ipam/ip-addresses
-  }
-
-  hosts {
-    10.0.0.1 example.org
-    10.0.0.3 definitely-not-in-netbox.org
-    fallthrough
-  }
-}
+#. {
+#  debug
+#  netbox {
+#    token 0123456789abcdef0123456789abcdef01234567
+#    url http://localhost:8000/api/ipam/ip-addresses
+#  }
+#  cache
+#}
 
 # The following example has requests in example.org handled by netbox:
 #
@@ -60,3 +55,4 @@
 #   }
 #   forward . 1.1.1.1 1.0.0.1
 # }
+#
