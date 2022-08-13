@@ -34,14 +34,13 @@ import (
 var log = clog.NewWithPlugin("netbox")
 
 type Netbox struct {
-	Url           string
-	Token         string
-	CacheDuration time.Duration
-	Next          plugin.Handler
-	TTL           time.Duration
-	Fall          fall.F
-	Zones         []string
-	Client        *http.Client
+	Url    string
+	Token  string
+	Next   plugin.Handler
+	TTL    time.Duration
+	Fall   fall.F
+	Zones  []string
+	Client *http.Client
 }
 
 // constants to match IP address family used by NetBox

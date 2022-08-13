@@ -16,7 +16,6 @@
   netbox {
     token 0123456789abcdef0123456789abcdef01234567
     url http://localhost:8000/api/ipam/ip-addresses
-    localCacheDuration 1h
   }
 
   hosts {
@@ -32,7 +31,6 @@
 #   netbox example.org {
 #     token 0123456789abcdef0123456789abcdef01234567
 #     url http://localhost:8000/api/ipam/ip-addresses
-#     localCacheDuration 1h
 #   } 
 # }
 #
@@ -43,7 +41,6 @@
 #   netbox example.org example.net {
 #     token 0123456789abcdef0123456789abcdef01234567
 #     url http://localhost:8000/api/ipam/ip-addresses
-#     localCacheDuration 1h
 #   } 
 # }
 #
@@ -58,7 +55,6 @@
 #   netbox {
 #     token 0123456789abcdef0123456789abcdef01234567
 #     url http://localhost:8000/api/ipam/ip-addresses
-#     localCacheDuration 1h
 #     ttl 1800s
 #     fallthrough
 #   }

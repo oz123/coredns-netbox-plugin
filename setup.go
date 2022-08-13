@@ -168,8 +168,8 @@ func parseNetbox(c *caddy.Controller) (*Netbox, error) {
 		}
 	}
 
-	// fail if url, token or localCacheDuration are not set
-	if n.Url == "" || n.Token == "" || n.CacheDuration == 0 {
+	// fail if url or token are not set
+	if n.Url == "" || n.Token == "" {
 		return nil, c.Err("Invalid config")
 	}
 

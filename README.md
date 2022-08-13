@@ -54,9 +54,7 @@ be able to fall-through to (eg `file:file` or `forward:forward`).
 netbox [ZONES...] {
   token TOKEN
   url URL
-  localCacheDuration DURATION
   tls CERT KEY CACERT
-  ttl DURATION
   timeout DURATION
   fallthrough [ZONES...]
 }
@@ -83,6 +81,7 @@ netbox [ZONES...] {
   
   These options set certificate verification method for the NetBox server if
   HTTPS is used to access the API.
+
 * `ttl` **DURATION** defines the TTL of records returned from *netbox*. Default
   is 1h (3600s).
 * `timeout` **DURATION** defines the HTTP timeout for API requests against
@@ -103,7 +102,6 @@ Send all requests to NetBox:
     netbox {
         token SuperSecretNetBoxAPIToken
         url https://netbox.example.org/api/ipam/ip-addresses
-        localCacheDuration 300s
     }
 }
 ```
@@ -116,7 +114,6 @@ plugin in order to respond to unsupported record types (ie `SOA`, `NS` etc):
     netbox example.org {
         token SuperSecretNetBoxAPIToken
         url https://netbox.example.org/api/ipam/ip-addresses
-        localCacheDuration 300s
         fallthrough
     }
     file db.example.org
@@ -125,17 +122,17 @@ plugin in order to respond to unsupported record types (ie `SOA`, `NS` etc):
 ```
 
 Handle all requests with *netbox* and fall-through to the `forward`
-plugin for requests within `example.org`:
+plugin for requests within `example.org` with caching via the `cache` plugin:
 
 ```
 . {
     netbox {
         token SuperSecretNetBoxAPIToken
         url https://netbox.example.org/api/ipam/ip-addresses
-        localCacheDuration 300s
         fallthrough example.org
     }
     forward . 1.1.1.1 1.0.0.1
+    cache
 }
 ```
 

@@ -17,15 +17,9 @@ package netbox
 import (
 	"net"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/h2non/gock.v1"
-)
-
-var (
-	anotherHostWithIPv4 = `{"results": [{"family": {"value": 4, "label": "IPv4"},
-                                         "address": "10.0.0.2/25", "dns_name": "my_host"}]}`
 )
 
 func TestQuery(t *testing.T) {
@@ -33,7 +27,6 @@ func TestQuery(t *testing.T) {
 	n := newNetbox()
 	n.Url = "https://example.org/api/ipam/ip-addresses"
 	n.Token = "mytoken"
-	n.CacheDuration = time.Millisecond * 100
 
 	tests := []struct {
 		name    string
@@ -130,50 +123,5 @@ func TestQuery(t *testing.T) {
 			assert.NoError(t, err, tt.name)
 			assert.Equal(t, tt.want, got, tt.name)
 		}
-	}
-}
-
-func TestLocalCache(t *testing.T) {
-	// set up dummy Netbox
-	n := newNetbox()
-	n.Url = "https://example.org/api/ipam/ip-addresses"
-	n.Token = "mytoken"
-	n.CacheDuration = time.Millisecond * 100
-
-	defer gock.Off() // Flush pending mocks after test execution
-	gock.New("https://example.org/api/ipam/ip-addresses/").MatchParams(
-		map[string]string{"dns_name": "my_host"}).Reply(
-		200).BodyString(anotherHostWithIPv4)
-
-	ip_address := make([]net.IP, 0)
-
-	got, _ := n.query("my_host", familyIP4)
-
-	item, err := localCache.Get("my_host")
-	if err == nil {
-		ip_address = item.Value().([]net.IP)
-	}
-
-	assert.Equal(t, got, ip_address, "local cache item didn't match")
-
-}
-
-func TestLocalCacheExpiration(t *testing.T) {
-	// set up dummy Netbox
-	n := newNetbox()
-	n.Url = "https://example.org/api/ipam/ip-addresses"
-	n.Token = "mytoken"
-	n.CacheDuration = time.Millisecond * 100
-
-	defer gock.Off() // Flush pending mocks after test execution
-	gock.New("https://example.org/api/ipam/ip-addresses/").MatchParams(
-		map[string]string{"dns_name": "my_host"}).Reply(
-		200).BodyString(anotherHostWithIPv4)
-
-	_, _ = n.query("my_host", familyIP4)
-	<-time.After(101 * time.Millisecond)
-	item, err := localCache.Get("my_host")
-	if err != nil {
-		t.Fatalf("Expected errors, but got: %v", item)
 	}
 }
