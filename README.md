@@ -64,8 +64,6 @@ netbox [ZONES...] {
   (**REQUIRED**).
 * `url` **URL** defines the URL *netbox* should query. This URL must be
   specified in full as `SCHEME://HOST/api/ipam/ip-addresses` (**REQUIRED**).
-* `localCacheDuration` **DURATION** sets the time to cache responses from
-  NetBox.
 * `tls` is followed by:
   * no arguments, if the server certificate is signed by a system-installed
     CA and no client cert is needed (this is the default if HTTPS is used).
