@@ -88,7 +88,7 @@ to the next plugin. If **[ZONES…]** is omitted, then fallthrough happens for
 all zones for which the plugin is authoritative. If specific zones are listed
 then only queries for those zones will be subject to fallthrough.
 
-The config parameters `token`, `url` and `localCacheDuration` are required.
+The config parameters `token` and `url` are required.
 
 ## Examples
 
