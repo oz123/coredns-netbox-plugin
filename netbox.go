@@ -52,8 +52,9 @@ const (
 // ServeDNS implements the plugin.Handler interface
 func (n *Netbox) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) (int, error) {
 	var (
-		ips []net.IP
-		err error
+		ips     []net.IP
+		domains []string
+		err     error
 	)
 
 	state := request.Request{W: w, Req: r}
@@ -66,8 +67,8 @@ func (n *Netbox) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg)
 
 	qname := state.Name()
 
-	// check record type here and bail out if not A or AAAA
-	if state.QType() != dns.TypeA && state.QType() != dns.TypeAAAA {
+	// check record type here and bail out if not A, AAAA or PTR
+	if state.QType() != dns.TypeA && state.QType() != dns.TypeAAAA && state.QType() != dns.TypePTR {
 		// always fallthrough if configured
 		if n.Fall.Through(qname) {
 			return plugin.NextOrFailure(n.Name(), n.Next, ctx, w, r)
@@ -91,6 +92,9 @@ func (n *Netbox) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg)
 	case dns.TypeAAAA:
 		ips, err = n.query(strings.TrimRight(qname, "."), familyIP6)
 		answers = aaaa(qname, uint32(n.TTL), ips)
+	case dns.TypePTR:
+		domains, err = n.queryreverse(qname)
+		answers = ptr(qname, uint32(n.TTL), domains)
 	}
 
 	if len(answers) == 0 {
@@ -145,6 +149,20 @@ func aaaa(zone string, ttl uint32, ips []net.IP) []dns.RR {
 		r.AAAA = ip
 		answers[i] = r
 	}
+	return answers
+}
+
+// ptr takes a slice of strings and returns a slice of PTR RRs.
+func ptr(zone string, ttl uint32, domains []string) []dns.RR {
+
+	answers := make([]dns.RR, len(domains))
+	for i, domain := range domains {
+		r := new(dns.PTR)
+		r.Hdr = dns.RR_Header{Name: zone, Rrtype: dns.TypePTR, Class: dns.ClassINET, Ttl: ttl}
+		r.Ptr = domain
+		answers[i] = r
+	}
+
 	return answers
 }
 
