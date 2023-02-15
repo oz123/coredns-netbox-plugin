@@ -1,0 +1,23 @@
+# cache, if entry is found it will be saved in the cache and not be
+# asked again
+
+. {
+  debug
+  template IN SOA in-addr.arpa {
+    answer "{{ .Name }} 86400 IN SOA ns1.example.com. sysmasters.example.com. (20230215 3600 600 86400 3600)"
+    authority  "{{ .Name }} 86400 IN NS ns1.example.com."
+    authority  "{{ .Name }} 86400 IN NS ns2.example.com."
+    fallthrough
+  }
+
+  netbox {
+    token 0123456789abcdef0123456789abcdef01234567
+    url http://localhost:8000/api/ipam/ip-addresses
+    fallthrough
+  }
+  
+  cache 300 # see docs for the cache Plugin about config
+}
+
+# To make coredns authoritative for reverse zone you need to have soa record provided by template plugin
+# and netbox plugin handled ptr record resolution via netbox api
