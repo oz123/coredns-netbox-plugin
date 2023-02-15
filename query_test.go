@@ -15,6 +15,7 @@
 package netbox
 
 import (
+	"fmt"
 	"net"
 	"testing"
 
@@ -122,6 +123,56 @@ func TestQuery(t *testing.T) {
 		} else {
 			assert.NoError(t, err, tt.name)
 			assert.Equal(t, tt.want, got, tt.name)
+		}
+	}
+}
+
+func TestReverseQuery(t *testing.T) {
+	// set up dummy Netbox
+	n := newNetbox()
+	n.Url = "https://example.org/api/ipam/ip-addresses"
+	n.Token = "mytoken"
+
+	tests := []struct {
+		name    string
+		reverse string
+		body    string
+		wantErr bool
+		want    []string
+	}{
+		{
+			"Reverse Query",
+			"2.0.0.10.in-addr.arpa.",
+			`{
+				"results": [
+					{"address": "10.0.0.2", "dns_name": "domain.com"}
+				]
+			}`,
+			false,
+			[]string{
+				"domain.com.",
+			},
+		},
+	}
+
+	defer gock.Off() // Flush pending mocks after test execution
+
+	// set up mock responses
+	for _, tt := range tests {
+		gock.New("https://example.org/api/ipam/ip-addresses/").MatchParams(
+			map[string]string{"address": "10.0.0.2"}).Reply(
+			200).BodyString(tt.body)
+	}
+
+	// run tests
+	for _, tt := range tests {
+		got, err := n.queryreverse(tt.reverse)
+		if tt.wantErr {
+			assert.Error(t, err, tt.name)
+		} else {
+			fmt.Printf("%#v\n", got)
+			assert.NoError(t, err, tt.name)
+			assert.Equal(t, tt.want, got, tt.reverse)
 		}
 	}
 }
