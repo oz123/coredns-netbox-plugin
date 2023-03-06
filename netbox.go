@@ -71,7 +71,7 @@ func (n *Netbox) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg)
 	// server handling the request.
 	requestCount.WithLabelValues(metrics.WithServer(ctx)).Inc()
 
-	answers := []dns.RR{}
+	var answers []dns.RR
 
 	// check record type here and bail out if not A, AAAA or PTR
 	switch state.QType() {
@@ -94,21 +94,10 @@ func (n *Netbox) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg)
 		return dnserror(dns.RcodeServerFailure, state, err)
 	}
 
-	if len(answers) == 0 {
-		// always fallthrough if configured
-		if n.Fall.Through(qname) {
-			return plugin.NextOrFailure(n.Name(), n.Next, ctx, w, r)
-		}
-
-		if err != nil {
-			// return SERVFAIL here without fallthrough
-			return dnserror(dns.RcodeServerFailure, state, err)
-		}
-
-		// otherwise return NXDOMAIN
-		return dnserror(dns.RcodeNameError, state, nil)
+	if err != nil {
+		// return SERVFAIL here without fallthrough
+		return dnserror(dns.RcodeServerFailure, state, err)
 	}
-
 	// create DNS response
 	m := new(dns.Msg)
 	m.SetReply(r)
