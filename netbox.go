@@ -67,24 +67,13 @@ func (n *Netbox) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg)
 
 	qname := state.Name()
 
-	// check record type here and bail out if not A, AAAA or PTR
-	if state.QType() != dns.TypeA && state.QType() != dns.TypeAAAA && state.QType() != dns.TypePTR {
-		// always fallthrough if configured
-		if n.Fall.Through(qname) {
-			return plugin.NextOrFailure(n.Name(), n.Next, ctx, w, r)
-		}
-
-		// otherwise return SERVFAIL here without fallthrough
-		return dnserror(dns.RcodeServerFailure, state, err)
-	}
-
 	// Export metric with the server label set to the current
 	// server handling the request.
 	requestCount.WithLabelValues(metrics.WithServer(ctx)).Inc()
 
 	answers := []dns.RR{}
 
-	// handle A and AAAA records only
+	// check record type here and bail out if not A, AAAA or PTR
 	switch state.QType() {
 	case dns.TypeA:
 		ips, err = n.query(strings.TrimRight(qname, "."), familyIP4)
@@ -95,6 +84,14 @@ func (n *Netbox) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg)
 	case dns.TypePTR:
 		domains, err = n.queryreverse(qname)
 		answers = ptr(qname, uint32(n.TTL), domains)
+	default:
+		// always fallthrough if configured
+		if n.Fall.Through(qname) {
+			return plugin.NextOrFailure(n.Name(), n.Next, ctx, w, r)
+		}
+
+		// otherwise return SERVFAIL here without fallthrough
+		return dnserror(dns.RcodeServerFailure, state, err)
 	}
 
 	if len(answers) == 0 {

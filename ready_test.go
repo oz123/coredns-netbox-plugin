@@ -15,7 +15,7 @@ func TestNetboxReady(t *testing.T) {
 	nb := Netbox{Url: "https://example.org/api/ipam/ip-addresses", Token: "s3kr3tt0ken", Client: &http.Client{}}
 	ready := nb.Ready()
 	if !ready {
-		t.Errorf("Expected ready %v, got %v", true, ready)
+		t.Errorf("Expected ready be %v, got %v", true, ready)
 	}
 }
 
@@ -27,6 +27,6 @@ func TestNetboxNotReady(t *testing.T) {
 	nb := Netbox{Url: "https://example.org/api/ipam/ip-addresses", Token: "s3kr3tt0ken", Client: &http.Client{}}
 	not_ready := nb.Ready()
 	if not_ready {
-		t.Errorf("Expected ready %v, got %v", false, not_ready)
+		t.Errorf("Expected ready to be %v, got %v", false, not_ready)
 	}
 }
