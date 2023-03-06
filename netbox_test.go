@@ -27,6 +27,8 @@ import (
 var hostWithIPv4 = `{"results": [{"family": {"value": 4, "label": "IPv4"},
                                  "address": "10.0.0.2/25", "dns_name": "my_host"}]}`
 
+var reverseDNS = `{"results": [{ "address": "10.0.0.2", "dns_name": "domain.com"}]}`
+
 func TestNetbox(t *testing.T) {
 	defer gock.Off() // Flush pending mocks after test execution
 	gock.New("https://example.org/api/ipam/ip-addresses/").MatchParams(
@@ -55,6 +57,38 @@ func TestNetbox(t *testing.T) {
 
 	if IP != "10.0.0.2" {
 		t.Errorf("Expected %v, got %v", "10.0.0.2", IP)
+	}
+
+}
+
+func TestReverseNetbox(t *testing.T) {
+	defer gock.Off() // Flush pending mocks after test execution
+	gock.New("https://example.org/api/ipam/ip-addresses/").MatchParams(
+		map[string]string{"address": "10.0.0.2"}).Reply(
+		200).BodyString(reverseDNS)
+	nb := newNetbox()
+	nb.Url = "https://example.org/api/ipam/ip-addresses"
+	nb.Token = "s3kr3tt0ken"
+
+	if nb.Name() != "netbox" {
+		t.Errorf("expected plugin name: %s, got %s", "netbox", nb.Name())
+	}
+
+	rec := dnstest.NewRecorder(&test.ResponseWriter{})
+	r := new(dns.Msg)
+	r.SetQuestion("2.0.0.10.in-addr.arpa.", dns.TypePTR)
+
+	rcode, err := nb.ServeDNS(context.Background(), rec, r)
+	if err != nil {
+		t.Errorf("Expected no error, got %v", err)
+	}
+	if rcode != 0 {
+		t.Errorf("Expected rcode %v, got %v", 0, rcode)
+	}
+	Domain := rec.Msg.Answer[0].(*dns.PTR).Ptr
+
+	if Domain != "domain.com." {
+		t.Errorf("Expected %v, got %v", "domain.com.", Domain)
 	}
 
 }
