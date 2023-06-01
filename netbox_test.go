@@ -17,6 +17,7 @@ package netbox
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/coredns/coredns/plugin/pkg/dnstest"
 	"github.com/coredns/coredns/plugin/test"
@@ -37,6 +38,7 @@ func TestNetbox(t *testing.T) {
 	nb := newNetbox()
 	nb.Url = "https://example.org/api/ipam/ip-addresses"
 	nb.Token = "s3kr3tt0ken"
+	nb.TTL, _ = time.ParseDuration("60m")
 
 	if nb.Name() != "netbox" {
 		t.Errorf("expected plugin name: %s, got %s", "netbox", nb.Name())
@@ -57,6 +59,11 @@ func TestNetbox(t *testing.T) {
 
 	if IP != "10.0.0.2" {
 		t.Errorf("Expected %v, got %v", "10.0.0.2", IP)
+	}
+
+	TTL := rec.Msg.Answer[0].Header().Ttl
+	if TTL != 3600 {
+		t.Errorf("Expected TTL %v, got %v", 3600, TTL)
 	}
 
 }

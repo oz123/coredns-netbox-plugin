@@ -26,11 +26,11 @@ import (
 	"github.com/coredns/caddy"
 )
 
-var VERSION = "0.1.1-dev"
+var VERSION = "0.5.0"
 
 const (
-	defaultTTL     = 3600            // 3600s
-	defaultTimeout = time.Second * 5 // 5s
+	defaultTTL     = time.Second * 3600 // 3600s
+	defaultTimeout = time.Second * 5    // 5s
 )
 
 // init registers this plugin.

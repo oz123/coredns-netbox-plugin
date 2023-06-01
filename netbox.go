@@ -77,13 +77,13 @@ func (n *Netbox) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg)
 	switch state.QType() {
 	case dns.TypeA:
 		ips, err = n.query(strings.TrimRight(qname, "."), familyIP4)
-		answers = a(qname, uint32(n.TTL), ips)
+		answers = a(qname, uint32(n.TTL.Seconds()), ips)
 	case dns.TypeAAAA:
 		ips, err = n.query(strings.TrimRight(qname, "."), familyIP6)
-		answers = aaaa(qname, uint32(n.TTL), ips)
+		answers = aaaa(qname, uint32(n.TTL.Seconds()), ips)
 	case dns.TypePTR:
 		domains, err = n.queryreverse(qname)
-		answers = ptr(qname, uint32(n.TTL), domains)
+		answers = ptr(qname, uint32(n.TTL.Seconds()), domains)
 	default:
 		// always fallthrough if configured
 		if n.Fall.Through(qname) {
