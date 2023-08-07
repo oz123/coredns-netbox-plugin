@@ -98,6 +98,15 @@ func (n *Netbox) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg)
 		// return SERVFAIL here without fallthrough
 		return dnserror(dns.RcodeServerFailure, state, err)
 	}
+
+	if len(answers) == 0 {
+		if n.Fall.Through(qname) {
+			return plugin.NextOrFailure(n.Name(), n.Next, ctx, w, r)
+		} else {
+			return dnserror(dns.RcodeNameError, state, nil)
+		}
+	}
+
 	// create DNS response
 	m := new(dns.Msg)
 	m.SetReply(r)
