@@ -5,6 +5,8 @@ VERSION ?= 1.12.0
 
 HELP_GENERATOR = mh
 
+PLUGIN_NAME = rest
+
 .PHONY: help
 help:
 	@$(HELP_GENERATOR) -f $(MAKEFILE_LIST) $(target) 2>/dev/null || echo install mh from: https://github.com/oz123/mh/releases/
@@ -27,8 +29,8 @@ coredns-patch-go.mod:  ## patch coredns to local compile
 	grep netbox-plugin coredns-$(VERSION)/go.mod || echo 'replace github.com/oz123/coredns-netbox-plugin =>' go.mod
 
 .PHONY: coredns-add-rest-plugin
-coredns-add-rest-plugin:  ## patch coredns to local compile
-	grep netbox-plugin coredns-$(VERSION)/go.mod || sed '/hosts:hosts/i netbox:github.com/oz123/coredns-netbox-plugin' plugin.cfg coredns-$(VERSION)/plugin.cfg
+coredns-add-rest-plugin:  ## add plugin to coredns plugin.cfg
+	grep netbox-plugin coredns-$(VERSION)/plugin.cfg || sed '/hosts:hosts/i $(PLUGIN_NAME):github.com/oz123/coredns-netbox-plugin' plugin.cfg coredns-$(VERSION)/plugin.cfg
 
 .PHONY: coredns-build
 coredns-build:  ## build local coredns with the plugin installed
