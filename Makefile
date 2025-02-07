@@ -24,6 +24,7 @@ coredns-unzip: ## unzip coredns distribution
 .PHONY: coredns-patch-go.mod
 coredns-patch-go.mod:  ## patch coredns to local compile
 	grep netbox-plugin coredns-$(VERSION)/go.mod || echo 'replace github.com/oz123/coredns-netbox-plugin =>' $(CURDIR) >> coredns-$(VERSION)/go.mod
+	grep netbox-plugin coredns-$(VERSION)/go.mod || echo 'replace github.com/oz123/coredns-netbox-plugin =>' go.mod
 
 .PHONY: coredns-add-rest-plugin
 coredns-add-rest-plugin:  ## patch coredns to local compile
