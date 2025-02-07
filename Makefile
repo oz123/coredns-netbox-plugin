@@ -30,7 +30,7 @@ coredns-patch-go.mod:  ## patch coredns to local compile
 
 .PHONY: coredns-add-rest-plugin
 coredns-add-rest-plugin:  ## add plugin to coredns plugin.cfg
-	grep netbox-plugin coredns-$(VERSION)/plugin.cfg || sed '/hosts:hosts/i $(PLUGIN_NAME):github.com/oz123/coredns-netbox-plugin' plugin.cfg coredns-$(VERSION)/plugin.cfg
+	grep netbox-plugin coredns-$(VERSION)/plugin.cfg || sed -i '/hosts:hosts/i $(PLUGIN_NAME):github.com/oz123/coredns-netbox-plugin' coredns-$(VERSION)/plugin.cfg
 
 .PHONY: coredns-build
 coredns-build:  ## build local coredns with the plugin installed
