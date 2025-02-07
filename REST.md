@@ -31,7 +31,7 @@ $ make coredns-build
 
 6. Test the plugin was compiled properly
 ```
-$ ./coredns-$(version)/coredns -plugin | grep rest
+$ ./coredns-1.12.0/coredns -plugins | grep rest
 ```
 It should show `rest` if succeeded.
 
