@@ -53,7 +53,6 @@ const (
 func (n *Netbox) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) (int, error) {
 	var (
 		ips     []net.IP
-		domains []string
 		err     error
 	)
 
@@ -81,9 +80,9 @@ func (n *Netbox) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg)
 	case dns.TypeAAAA:
 		ips, err = n.query(strings.TrimRight(qname, "."), familyIP6)
 		answers = aaaa(qname, uint32(n.TTL.Seconds()), ips)
-	case dns.TypePTR:
-		domains, err = n.queryreverse(qname)
-		answers = ptr(qname, uint32(n.TTL.Seconds()), domains)
+	//case dns.TypePTR:
+    //		domains, err = n.queryreverse(qname)
+	//		answers = ptr(qname, uint32(n.TTL.Seconds()), domains)
 	default:
 		// always fallthrough if configured
 		if n.Fall.Through(qname) {

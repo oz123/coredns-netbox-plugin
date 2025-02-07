@@ -83,66 +83,14 @@ func (n *Netbox) query(host string, family int) ([]net.IP, error) {
 
 	// read and parse response body
 	decoder := json.NewDecoder(resp.Body)
-	if err := decoder.Decode(&records); err != nil {
+	if err := decoder.Decode(&record); err != nil {
 		return addresses, fmt.Errorf("Could not unmarshal response: %w", err)
 	}
+	fmt.Println(record)
 
-	// handle empty list of records
-	if len(records.Records) == 0 {
-		return addresses, nil
-	}
-
-	// grab returned address of specified address family
-	for _, r := range records.Records {
-		if r.Family.Version == family {
-			if addr := net.ParseIP(strings.Split(r.Address, "/")[0]); addr != nil {
-				addresses = append(addresses, addr)
-			}
+	if addr := net.ParseIP(record.Value); addr != nil {
+		addresses = append(addresses, addr)
 		}
-	}
 
 	return addresses, nil
-}
-
-func (n *Netbox) queryreverse(host string) ([]string, error) {
-	var (
-		ip      = dnsutil.ExtractAddressFromReverse(host)
-		requrl  = fmt.Sprintf("%s/?address=%s", n.Url, ip)
-		records RecordsList
-	)
-
-	// // Initialise an empty slice of domains
-	domains := make([]string, 0)
-
-	// do http request against NetBox instance
-	resp, err := get(n.Client, requrl, n.Token)
-	if err != nil {
-		return domains, fmt.Errorf("Problem performing request: %w", err)
-	}
-
-	// ensure body is closed once we are done
-	defer resp.Body.Close()
-
-	// status code must be http.StatusOK
-	if resp.StatusCode != http.StatusOK {
-		return domains, fmt.Errorf("Bad HTTP response code: %d", resp.StatusCode)
-	}
-
-	// read and parse response body
-	decoder := json.NewDecoder(resp.Body)
-	if err := decoder.Decode(&records); err != nil {
-		return domains, fmt.Errorf("Could not unmarshal response: %w", err)
-	}
-
-	// handle empty list of records
-	if len(records.Records) == 0 {
-		return domains, nil
-	}
-
-	// grab returned domains
-	for _, r := range records.Records {
-		domains = append(domains, strings.TrimSuffix(r.HostName, ".")+".")
-	}
-
-	return domains, nil
 }
