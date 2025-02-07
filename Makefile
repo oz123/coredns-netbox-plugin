@@ -1,5 +1,5 @@
 SHELL := /bin/bash
-VERSION ?= 1.8.6
+VERSION ?= 1.12.0
 
 .DEFAULT_GOAL := help
 
