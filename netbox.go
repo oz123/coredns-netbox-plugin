@@ -29,9 +29,10 @@ import (
 	"github.com/miekg/dns"
 )
 
+var pluginName string = "rest"
 // Define log to be a logger with the plugin name in it. This way we can just use log.Info and
 // friends to log.
-var log = clog.NewWithPlugin("netbox")
+var log = clog.NewWithPlugin(pluginName)
 
 type Netbox struct {
 	Url    string
@@ -120,7 +121,7 @@ func (n *Netbox) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg)
 }
 
 // Name implements the Handler interface.
-func (n *Netbox) Name() string { return "netbox" }
+func (n *Netbox) Name() string { return pluginName }
 
 // a takes a slice of net.IPs and returns a slice of A RRs.
 func a(zone string, ttl uint32, ips []net.IP) []dns.RR {

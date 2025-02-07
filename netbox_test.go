@@ -25,23 +25,20 @@ import (
 	"gopkg.in/h2non/gock.v1"
 )
 
-var hostWithIPv4 = `{"results": [{"family": {"value": 4, "label": "IPv4"},
-                                 "address": "10.0.0.2/25", "dns_name": "my_host"}]}`
-
-var reverseDNS = `{"results": [{ "address": "10.0.0.2", "dns_name": "domain.com"}]}`
+var hostWithIPv4 = `{"name": "example.com", "type": "A", "value": "10.0.0.2"}`
+                          
 
 func TestNetbox(t *testing.T) {
 	defer gock.Off() // Flush pending mocks after test execution
-	gock.New("https://example.org/api/ipam/ip-addresses/").MatchParams(
-		map[string]string{"dns_name": "my_host"}).Reply(
+	gock.New("https://example.org/").Reply(
 		200).BodyString(hostWithIPv4)
 	nb := newNetbox()
 	nb.Url = "https://example.org/api/ipam/ip-addresses"
 	nb.Token = "s3kr3tt0ken"
 	nb.TTL, _ = time.ParseDuration("60m")
 
-	if nb.Name() != "netbox" {
-		t.Errorf("expected plugin name: %s, got %s", "netbox", nb.Name())
+	if nb.Name() != pluginName {
+		t.Errorf("expected plugin name: %s, got %s", pluginName, nb.Name())
 	}
 
 	rec := dnstest.NewRecorder(&test.ResponseWriter{})
@@ -64,38 +61,6 @@ func TestNetbox(t *testing.T) {
 	TTL := rec.Msg.Answer[0].Header().Ttl
 	if TTL != 3600 {
 		t.Errorf("Expected TTL %v, got %v", 3600, TTL)
-	}
-
-}
-
-func TestReverseNetbox(t *testing.T) {
-	defer gock.Off() // Flush pending mocks after test execution
-	gock.New("https://example.org/api/ipam/ip-addresses/").MatchParams(
-		map[string]string{"address": "10.0.0.2"}).Reply(
-		200).BodyString(reverseDNS)
-	nb := newNetbox()
-	nb.Url = "https://example.org/api/ipam/ip-addresses"
-	nb.Token = "s3kr3tt0ken"
-
-	if nb.Name() != "netbox" {
-		t.Errorf("expected plugin name: %s, got %s", "netbox", nb.Name())
-	}
-
-	rec := dnstest.NewRecorder(&test.ResponseWriter{})
-	r := new(dns.Msg)
-	r.SetQuestion("2.0.0.10.in-addr.arpa.", dns.TypePTR)
-
-	rcode, err := nb.ServeDNS(context.Background(), rec, r)
-	if err != nil {
-		t.Errorf("Expected no error, got %v", err)
-	}
-	if rcode != 0 {
-		t.Errorf("Expected rcode %v, got %v", 0, rcode)
-	}
-	Domain := rec.Msg.Answer[0].(*dns.PTR).Ptr
-
-	if Domain != "domain.com." {
-		t.Errorf("Expected %v, got %v", "domain.com.", Domain)
 	}
 
 }

@@ -24,13 +24,13 @@ coredns-unzip: ## unzip coredns distribution
 .PHONY: coredns-patch-go.mod
 coredns-patch-go.mod:  ## patch coredns to local compile
 	grep netbox-plugin coredns-$(VERSION)/go.mod || echo 'replace github.com/oz123/coredns-netbox-plugin =>' $(CURDIR) >> coredns-$(VERSION)/go.mod
-	grep netbox-plugin coredns-$(VERSION)/go.mod || echo 'netbox:github.com/oz123/coredns-netbox-plugin' >> coredns-$(VERSION)/plugin.cfg
+
+.PHONY: coredns-add-rest-plugin
+coredns-add-rest-plugin:  ## patch coredns to local compile
+	grep netbox-plugin coredns-$(VERSION)/go.mod || sed '/hosts:hosts/i netbox:github.com/oz123/coredns-netbox-plugin' plugin.cfg coredns-$(VERSION)/plugin.cfg
 
 .PHONY: coredns-build
 coredns-build:  ## build local coredns with the plugin installed
-	#go get github.com/oz123/coredns-netbox-plugin
-	#go get github.com/coredns/coredns/plugin/etcd
-	#cd coredns-1.8.4/ && go get github.com/oz123/coredns-netbox-plugin
 	make -C coredns-$(VERSION)/
 
 .PHONY: coredns-run ## run the compiled version with plugin
@@ -45,3 +45,5 @@ coredns-clean:
 test:  ## run the unit tests
 	go test -v -failfast
 
+test-api:
+	cd testing; python3 api.py
