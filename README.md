@@ -35,17 +35,17 @@ To activate the *netbox* plugin you need to compile CoreDNS with the plugin adde
 to `plugin.cfg`
 
 ```
+...
 netbox:github.com/oz123/coredns-netbox-plugin
+hosts:host
 ```
 
-### Ordering in plugin.cfg
+If you modify this version from git locally you need to patch go.mod.
+```
+$ make coredns-patch-go.mod 
+```
 
-The ordering of plugins in the `plugin.cfg` file is important to ensure you
-get the behaviour you expect when using multiple plugins in a
-[Corefile server block][2].
-
-For example, in order to utilise the native cache plugin, ensure that you add
-the *netbox* plugin _after_ `cache:cache` but _before_ any plugins you want to
+##netbox* plugin _after_ `cache:cache` but _before_ any plugins you want to
 be able to fall-through to (eg `file:file` or `forward:forward`).
 
 ## Syntax
