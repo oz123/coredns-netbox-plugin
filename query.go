@@ -18,24 +18,14 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"strings"
-
-	"github.com/coredns/coredns/plugin/pkg/dnsutil"
 )
 
+var PATH string = "/api/v1"
+
 type Record struct {
-	Family   Family `json:"family"`
-	Address  string `json:"address"`
-	HostName string `json:"dns_name,omitempty"`
-}
-
-type Family struct {
-	Version int    `json:"value"`
-	Label   string `json:"label"`
-}
-
-type RecordsList struct {
-	Records []Record `json:"results"`
+	Name  string `json:"name"`
+	Type  string `json:"type"`
+	Value string `json:"value"`
 }
 
 func get(client *http.Client, url, token string) (*http.Response, error) {
@@ -59,16 +49,15 @@ func get(client *http.Client, url, token string) (*http.Response, error) {
 
 func (n *Netbox) query(host string, family int) ([]net.IP, error) {
 	var (
-		dns_name = strings.TrimSuffix(host, ".")
-		requrl   = fmt.Sprintf("%s/?dns_name=%s", n.Url, dns_name)
-		records  RecordsList
+		requrl   = fmt.Sprintf("%s/%s", n.Url, PATH)
+		record  Record
 	)
 
 	// Initialise an empty slice of IP addresses
 	addresses := make([]net.IP, 0)
 
 	// do http request against NetBox instance
-	resp, err := get(n.Client, requrl, n.Token)
+	resp, err := get(n.Client, requrl, "")
 	if err != nil {
 		return addresses, fmt.Errorf("Problem performing request: %w", err)
 	}
