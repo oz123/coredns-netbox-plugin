@@ -147,9 +147,9 @@ func (n *Netbox) queryDNSPlugin(zone string, state request.Request) ([]dns.RR, e
 	qname := state.Name()
 	qtype := state.QType()
 
-	if qtype == dns.TypeSOA {
-		zones, err = n.queryZone(zone)
-	} else {
+	zones, err = n.queryZone(zone)
+
+	if qtype != dns.TypeSOA {
 		querySet, OK := DNSQueryReverseMap[qtype]
 		if !OK {
 			return nil, fmt.Errorf("request type not implemented")
