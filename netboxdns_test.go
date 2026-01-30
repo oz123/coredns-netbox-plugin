@@ -181,7 +181,7 @@ func TestQueryDNSPlugin(t *testing.T) {
 	for _, tt := range tests {
 		r := new(dns.Msg)
 		r.SetQuestion(tt.fqdn, DNSRecordReverseMap[tt.dnsType])
-		responses, err := n.queryDNSPlugin(tt.zone, request.Request{Req: r})
+		responses, _, err := n.queryDNSPlugin(tt.zone, request.Request{Req: r})
 
 		if tt.wantErr {
 			assert.Error(t, err, tt.name)

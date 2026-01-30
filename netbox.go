@@ -70,10 +70,11 @@ func (n *Netbox) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg)
 	// server handling the request.
 	requestCount.WithLabelValues(metrics.WithServer(ctx)).Inc()
 
+	var ns []dns.RR
 	var answers []dns.RR
 
 	if n.UsePlugin {
-		answers, err = n.queryDNSPlugin(zone, state)
+		answers, ns, err = n.queryDNSPlugin(zone, state)
 	} else {
 		answers, err = n.queryNative(state)
 	}
@@ -100,6 +101,7 @@ func (n *Netbox) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg)
 	m := new(dns.Msg)
 	m.SetReply(r)
 	m.Authoritative = true
+	m.Ns = ns
 	m.Answer = answers
 
 	// send response back to client
@@ -137,39 +139,53 @@ func (n *Netbox) queryNative(state request.Request) ([]dns.RR, error) {
 	return answers, err
 }
 
-func (n *Netbox) queryDNSPlugin(zone string, state request.Request) ([]dns.RR, error) {
+func (n *Netbox) queryDNSPlugin(zone string, state request.Request) ([]dns.RR, []dns.RR, error) {
 	var (
 		records []DNSRecord
 		zones   []DNSZone
 		answers []dns.RR = make([]dns.RR, 0)
+		ns      []dns.RR = make([]dns.RR, 0)
 		err     error
 	)
 	qname := state.Name()
 	qtype := state.QType()
 
-	zones, err = n.queryZone(zone)
-
-	if qtype != dns.TypeSOA {
+	if qtype == dns.TypeSOA {
+		zones, err = n.queryZone(zone)
+	} else {
 		querySet, OK := DNSQueryReverseMap[qtype]
 		if !OK {
-			return nil, fmt.Errorf("request type not implemented")
+			return nil, nil, fmt.Errorf("request type not implemented")
 		}
 		records, err = n.queryRecord(zone, qname, querySet)
 	}
 
+	if len(records) == 0 && qtype != dns.TypeSOA {
+		for _, zone := range zones {
+			ns = append(ns, zone.RR())
+		}
+		return answers, ns, err
+	}
+
+	var additionalRecords []DNSRecord
 	for _, record := range records {
 		// try to resolve CNAME record if question was A or AAAA
 		if record.Type == DNSRecordTypeCNAME && (qtype == dns.TypeA || qtype == dns.TypeAAAA) {
 			if resolvedRecs, err := n.queryRecord(zone, record.AbsoluteValue, DNSQueryReverseMap[qtype]); err == nil {
-				records = append(records, resolvedRecs...)
+				additionalRecords = append(additionalRecords, resolvedRecs...)
 			}
 		}
 		answers = append(answers, record.RR())
 	}
+
+	for _, record := range additionalRecords {
+		answers = append(answers, record.RR())
+	}
+
 	for _, zone := range zones {
 		answers = append(answers, zone.RR())
 	}
-	return answers, err
+	return answers, ns, err
 }
 
 // a takes a slice of net.IPs and returns a slice of A RRs.
