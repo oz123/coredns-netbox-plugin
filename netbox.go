@@ -89,7 +89,7 @@ func (n *Netbox) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg)
 		return dnserror(dns.RcodeServerFailure, state, err)
 	}
 
-	if len(answers) == 0 {
+	if len(answers) == 0 && len(ns) == 0 {
 		if n.Fall.Through(state.Name()) {
 			return plugin.NextOrFailure(n.Name(), n.Next, ctx, w, r)
 		} else {
