@@ -161,6 +161,10 @@ func (n *Netbox) queryDNSPlugin(zone string, state request.Request) ([]dns.RR, [
 	}
 
 	if len(records) == 0 && qtype != dns.TypeSOA {
+		zones, err = n.queryZone(zone)
+		if err != nil {
+			return nil, nil, err
+		}
 		for _, zone := range zones {
 			ns = append(ns, zone.RR())
 		}
