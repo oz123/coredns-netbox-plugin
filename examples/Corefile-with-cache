@@ -1,10 +1,22 @@
 # cache, if entry is found it will be saved in the cache and not be
 # asked again
+
+# WITHOUT netbox_dns_plugin:
 . {
   debug
   netbox {
     token 0123456789abcdef0123456789abcdef01234567
-    url http://localhost:8000/api/ipam/ip-addresses
+    url http://localhost:8000
+  }
+  cache 300  # see docs for the cache Plugin about config
+}
+
+# WITH netbox_dns_plugin:
+. {
+  debug
+  netbox example.com {
+    token 0123456789abcdef0123456789abcdef01234567
+    url http://localhost:8000
   }
   cache 300  # see docs for the cache Plugin about config
 }

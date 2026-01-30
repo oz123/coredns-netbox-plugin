@@ -5,14 +5,24 @@
 # NOTE: Thix example assumes that netbox was added to plugin.cfg before
 # forward.
 #
+# WITHOUT netbox_plugin_dns
 . {
    netbox {
      token 0123456789abcdef0123456789abcdef01234567
-     url http://localhost:8000/api/ipam/ip-addresses
+     url http://localhost:8000
      ttl 1800s
      fallthrough
    }
    forward . 1.1.1.1 1.0.0.1
 }
 
-
+# WITH netbox_plugin_dns
+. {
+   netbox example.com {
+     token 0123456789abcdef0123456789abcdef01234567
+     url http://localhost:8000
+     ttl 1800s
+     fallthrough
+   }
+   forward . 1.1.1.1 1.0.0.1
+}

@@ -1,3 +1,4 @@
+// Lucas Kirsche
 // Copyright 2020 Oz Tiram <oz.tiram@gmail.com>
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -101,6 +102,7 @@ func parseNetbox(c *caddy.Controller) (*Netbox, error) {
 		if len(zones) > 0 {
 			n.Zones = zones
 		}
+		log.Infof("Responsible zones: %v", n.Zones)
 
 		// parse inside block
 		for c.NextBlock() {
@@ -161,6 +163,10 @@ func parseNetbox(c *caddy.Controller) (*Netbox, error) {
 	// fail if url or token are not set
 	if n.Url == "" || n.Token == "" {
 		return nil, c.Err("Invalid config")
+	}
+
+	if !n.Ready() {
+		return nil, c.Err("Netbox not reachable")
 	}
 
 	return n, nil

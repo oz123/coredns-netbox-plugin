@@ -11,6 +11,9 @@
 # Alternatively if netbox was added after hosts then requests that are not
 # answered by hosts will fallthrough to netbox.
 #
+
+# WITHOUT netbox_plugin_dns
+
 #. {
 #  debug
 #  netbox {
@@ -50,6 +53,54 @@
 #   netbox {
 #     token 0123456789abcdef0123456789abcdef01234567
 #     url http://localhost:8000/api/ipam/ip-addresses
+#     ttl 1800s
+#     fallthrough
+#   }
+#   forward . 1.1.1.1 1.0.0.1
+# }
+#
+
+# WITH netbox_plugin_dns
+
+#. {
+#  debug
+#  netbox example.org {
+#    token 0123456789abcdef0123456789abcdef01234567
+#    url http://localhost:8000
+#  }
+#  cache
+#}
+
+# The following example has requests in example.org handled by netbox:
+#
+# . {
+#   netbox example.org {
+#     token 0123456789abcdef0123456789abcdef01234567
+#     url http://localhost:8000
+#   } 
+# }
+#
+#
+# The following has requests in example.org and example.net handled by netbox:
+#
+# . {
+#   netbox example.org example.net {
+#     token 0123456789abcdef0123456789abcdef01234567
+#     url http://localhost:8000
+#   } 
+# }
+#
+# The following has all requests handled by netbox with fallthrough to forward.
+#
+# In addition all record from netbox will be set with a TTL of 1800 seconds.
+#
+# NOTE: Thix example assumes that netbox was added to plugin.cfg before
+# forward.
+#
+# . {
+#   netbox example.org {
+#     token 0123456789abcdef0123456789abcdef01234567
+#     url http://localhost:8000
 #     ttl 1800s
 #     fallthrough
 #   }

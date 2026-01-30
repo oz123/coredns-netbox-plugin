@@ -1,3 +1,4 @@
+// Lucas Kirsche
 // Copyright 2020 Oz Tiram <oz.tiram@gmail.com>
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,7 +29,7 @@ import (
 var hostWithIPv4 = `{"results": [{"family": {"value": 4, "label": "IPv4"},
                                  "address": "10.0.0.2/25", "dns_name": "my_host"}]}`
 
-var reverseDNS = `{"results": [{ "address": "10.0.0.2", "dns_name": "domain.com"}]}`
+var reverseDNS = `{"results": [{ "address": "10.0.0.2/25", "dns_name": "domain.com"}]}`
 
 func TestNetbox(t *testing.T) {
 	defer gock.Off() // Flush pending mocks after test execution
@@ -36,7 +37,7 @@ func TestNetbox(t *testing.T) {
 		map[string]string{"dns_name": "my_host"}).Reply(
 		200).BodyString(hostWithIPv4)
 	nb := newNetbox()
-	nb.Url = "https://example.org/api/ipam/ip-addresses"
+	nb.Url = "https://example.org"
 	nb.Token = "s3kr3tt0ken"
 	nb.TTL, _ = time.ParseDuration("60m")
 
@@ -74,7 +75,7 @@ func TestReverseNetbox(t *testing.T) {
 		map[string]string{"address": "10.0.0.2"}).Reply(
 		200).BodyString(reverseDNS)
 	nb := newNetbox()
-	nb.Url = "https://example.org/api/ipam/ip-addresses"
+	nb.Url = "https://example.org"
 	nb.Token = "s3kr3tt0ken"
 
 	if nb.Name() != "netbox" {

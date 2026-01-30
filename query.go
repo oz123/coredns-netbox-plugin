@@ -1,3 +1,4 @@
+// Lucas Kirsche
 // Copyright 2020 Oz Tiram <oz.tiram@gmail.com>
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -60,7 +61,7 @@ func get(client *http.Client, url, token string) (*http.Response, error) {
 func (n *Netbox) query(host string, family int) ([]net.IP, error) {
 	var (
 		dns_name = strings.TrimSuffix(host, ".")
-		requrl   = fmt.Sprintf("%s/?dns_name=%s", n.Url, dns_name)
+		requrl   = fmt.Sprintf("%s/api/ipam/ip-addresses/?dns_name=%s", n.Url, dns_name)
 		records  RecordsList
 	)
 
@@ -70,7 +71,7 @@ func (n *Netbox) query(host string, family int) ([]net.IP, error) {
 	// do http request against NetBox instance
 	resp, err := get(n.Client, requrl, n.Token)
 	if err != nil {
-		return addresses, fmt.Errorf("Problem performing request: %w", err)
+		return addresses, fmt.Errorf("problem performing request: %w", err)
 	}
 
 	// ensure body is closed once we are done
@@ -78,13 +79,13 @@ func (n *Netbox) query(host string, family int) ([]net.IP, error) {
 
 	// status code must be http.StatusOK
 	if resp.StatusCode != http.StatusOK {
-		return addresses, fmt.Errorf("Bad HTTP response code: %d", resp.StatusCode)
+		return addresses, fmt.Errorf("bad HTTP response code: %d", resp.StatusCode)
 	}
 
 	// read and parse response body
 	decoder := json.NewDecoder(resp.Body)
 	if err := decoder.Decode(&records); err != nil {
-		return addresses, fmt.Errorf("Could not unmarshal response: %w", err)
+		return addresses, fmt.Errorf("could not unmarshal response: %w", err)
 	}
 
 	// handle empty list of records
@@ -107,7 +108,7 @@ func (n *Netbox) query(host string, family int) ([]net.IP, error) {
 func (n *Netbox) queryreverse(host string) ([]string, error) {
 	var (
 		ip      = dnsutil.ExtractAddressFromReverse(host)
-		requrl  = fmt.Sprintf("%s/?address=%s", n.Url, ip)
+		requrl  = fmt.Sprintf("%s/api/ipam/ip-addresses/?address=%s", n.Url, ip)
 		records RecordsList
 	)
 
@@ -117,7 +118,7 @@ func (n *Netbox) queryreverse(host string) ([]string, error) {
 	// do http request against NetBox instance
 	resp, err := get(n.Client, requrl, n.Token)
 	if err != nil {
-		return domains, fmt.Errorf("Problem performing request: %w", err)
+		return domains, fmt.Errorf("problem performing request: %w", err)
 	}
 
 	// ensure body is closed once we are done
@@ -125,13 +126,13 @@ func (n *Netbox) queryreverse(host string) ([]string, error) {
 
 	// status code must be http.StatusOK
 	if resp.StatusCode != http.StatusOK {
-		return domains, fmt.Errorf("Bad HTTP response code: %d", resp.StatusCode)
+		return domains, fmt.Errorf("bad HTTP response code: %d", resp.StatusCode)
 	}
 
 	// read and parse response body
 	decoder := json.NewDecoder(resp.Body)
 	if err := decoder.Decode(&records); err != nil {
-		return domains, fmt.Errorf("Could not unmarshal response: %w", err)
+		return domains, fmt.Errorf("could not unmarshal response: %w", err)
 	}
 
 	// handle empty list of records

@@ -12,7 +12,7 @@
 
   netbox {
     token 0123456789abcdef0123456789abcdef01234567
-    url http://localhost:8000/api/ipam/ip-addresses
+    url http://localhost:8000
     fallthrough
   }
   
@@ -21,3 +21,18 @@
 
 # To make coredns authoritative for reverse zone you need to have soa record provided by template plugin
 # and netbox plugin handled ptr record resolution via netbox api
+# UPDATE: This only applies if you don't use netbox_plugin_dns
+
+# In case of netbox_plugin_dns is used:
+
+. {
+  debug
+
+  netbox example.org 0.168.192.in-addr.arpa {
+    token 0123456789abcdef0123456789abcdef01234567
+    url http://localhost:8000
+    fallthrough
+  }
+  
+  cache 300 # see docs for the cache Plugin about config
+}

@@ -1,3 +1,4 @@
+// Lucas Kirsche
 // Copyright 2020 Oz Tiram <oz.tiram@gmail.com>
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,7 +27,7 @@ import (
 func TestQuery(t *testing.T) {
 	// set up dummy Netbox
 	n := newNetbox()
-	n.Url = "https://example.org/api/ipam/ip-addresses"
+	n.Url = "https://example.org"
 	n.Token = "mytoken"
 
 	tests := []struct {
@@ -130,7 +131,7 @@ func TestQuery(t *testing.T) {
 func TestReverseQuery(t *testing.T) {
 	// set up dummy Netbox
 	n := newNetbox()
-	n.Url = "https://example.org/api/ipam/ip-addresses"
+	n.Url = "https://example.org"
 	n.Token = "mytoken"
 
 	tests := []struct {
